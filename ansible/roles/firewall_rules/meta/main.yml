@@ -7,8 +7,7 @@ galaxy_info:
   platforms:
     - name: Windows
       versions:
-        - 2019
-        - 2022
+        - all
   galaxy_tags:
     - windows
     - firewall
