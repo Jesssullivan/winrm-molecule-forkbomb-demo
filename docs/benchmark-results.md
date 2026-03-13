@@ -71,13 +71,27 @@ Using `ansible_connection=psrp` with `ansible_psrp_auth=ntlm`:
 - **0 UNREACHABLE** (zero authentication failures)
 - **26 FAILED** with `HTTPSConnectionPool: Read timed out` (SSH tunnel bottleneck)
 
-```
-                   pywinrm          pypsrp
-                   -------          ------
-Successes:         9                24
-Error type:        UNREACHABLE      FAILED (timeout)
-Auth failures:     41               0
-AD lockout risk:   HIGH             NONE
+```mermaid
+---
+config:
+  theme: default
+---
+block-beta
+    columns 3
+    space header1["pywinrm"] header2["pypsrp"]
+    r1["Successes"] r1a["9"] r1b["24"]
+    r2["Error type"] r2a["UNREACHABLE"] r2b["FAILED (timeout)"]
+    r3["Auth failures"] r3a["41"] r3b["0"]
+    r4["AD lockout risk"] r4a["HIGH"] r4b["NONE"]
+
+    style r1a fill:#f66,stroke:#333
+    style r2a fill:#f66,stroke:#333
+    style r3a fill:#f66,stroke:#333
+    style r4a fill:#f66,stroke:#333
+    style r1b fill:#9f9,stroke:#333
+    style r2b fill:#ff9,stroke:#333
+    style r3b fill:#9f9,stroke:#333
+    style r4b fill:#9f9,stroke:#333
 ```
 
 !!! success "Key Finding"
@@ -104,19 +118,30 @@ The restart handler should be removed from quota configuration roles.
 
 ## Bottleneck Hierarchy
 
-```
-Layer 1: MaxConcurrentUsers (primary gate)
-  └─ Determines how many sessions can authenticate simultaneously
-  └─ Failures appear as NTLM auth errors (misleading)
+```mermaid
+flowchart TD
+    L1["Layer 1: MaxConcurrentUsers<br/><b>Primary gate</b>"]
+    L1a["Determines how many sessions<br/>can authenticate simultaneously"]
+    L1b["Failures appear as NTLM<br/>auth errors (misleading)"]
 
-Layer 2: MaxShellsPerUser (secondary gate)
-  └─ Not reached if MaxConcurrentUsers is hit first
-  └─ Only relevant for long-lived parallel sessions
+    L2["Layer 2: MaxShellsPerUser<br/><b>Secondary gate</b>"]
+    L2a["Not reached if<br/>MaxConcurrentUsers is hit first"]
+    L2b["Only relevant for<br/>long-lived parallel sessions"]
 
-Layer 3: SSH tunnel TCP pool (~20 connections)
-  └─ Infrastructure bottleneck, not WinRM
-  └─ Causes timeouts, not auth failures
-  └─ Does NOT trigger AD lockout
+    L3["Layer 3: SSH tunnel TCP pool<br/><b>~20 connections</b>"]
+    L3a["Infrastructure bottleneck,<br/>not WinRM"]
+    L3b["Causes timeouts,<br/>not auth failures"]
+    L3c["Does NOT trigger<br/>AD lockout"]
+
+    L1 --> L1a & L1b
+    L1 ==> L2
+    L2 --> L2a & L2b
+    L2 ==> L3
+    L3 --> L3a & L3b & L3c
+
+    style L1 fill:#f66,stroke:#333,stroke-width:2px
+    style L2 fill:#f96,stroke:#333,stroke-width:2px
+    style L3 fill:#ff9,stroke:#333,stroke-width:2px
 ```
 
 ## Quota State Comparison
