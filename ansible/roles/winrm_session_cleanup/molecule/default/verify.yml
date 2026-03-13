@@ -1,6 +1,6 @@
 ---
 - name: Verify - WinRM session cleanup
-  hosts: vmnode852
+  hosts: win-target
   serial: 1
   gather_facts: false
   tasks:

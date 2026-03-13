@@ -5,7 +5,7 @@ driver:
     managed: false
 
 platforms:
-  - name: vmnode852
+  - name: win-target
     managed: false
 
 provisioner:

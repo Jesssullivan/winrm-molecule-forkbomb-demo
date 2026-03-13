@@ -4,12 +4,12 @@
 # With forks=50 and 50 entries, all 50 connect simultaneously.
 #
 # WARNING: This WILL exhaust WinRM quotas and may trigger AD lockout.
-# Only use with `just benchmark-pressure` after coordinating with N&I.
+# Only use with `just benchmark-pressure` after coordinating with the infrastructure team.
 all:
   children:
     pressure_targets:
       hosts:
-        # 50 entries all pointing at vmnode852 via tunnel
+        # 50 entries all pointing at win-target via tunnel
         pressure-01: {}
         pressure-02: {}
         pressure-03: {}
@@ -61,9 +61,9 @@ all:
         pressure-49: {}
         pressure-50: {}
       vars:
-        ansible_host: localhost
+        ansible_host: "{{ tunnel_local_host | default('localhost') }}"
         ansible_connection: winrm
-        ansible_port: 15852
+        ansible_port: "{{ tunnel_local_port | default(15986) }}"
         ansible_winrm_scheme: https
         ansible_winrm_transport: ntlm
         ansible_winrm_server_cert_validation: ignore

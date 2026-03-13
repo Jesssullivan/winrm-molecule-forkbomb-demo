@@ -1,0 +1,63 @@
+name: CI
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install dependencies
+        run: |
+          pip install ansible ansible-lint yamllint pytest pyyaml
+          ansible-galaxy collection install -r ansible/requirements.yml
+      - name: YAML lint
+        run: yamllint -c .yamllint ansible/
+      - name: Ansible lint
+        run: ansible-lint ansible/playbooks/ ansible/roles/
+      - name: Pytest (structure)
+        run: pytest tests/test_structure.py -v -m structure
+
+  dhall:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Dhall
+        run: |
+          curl -L https://github.com/dhall-lang/dhall-haskell/releases/download/1.42.1/dhall-1.42.1-x86_64-linux.tar.bz2 | tar xj
+          curl -L https://github.com/dhall-lang/dhall-haskell/releases/download/1.42.1/dhall-json-1.7.12-x86_64-linux.tar.bz2 | tar xj
+          echo "$PWD/bin" >> $GITHUB_PATH
+      - name: Dhall typecheck
+        run: |
+          dhall type --file dhall/package.dhall > /dev/null
+          dhall type --file dhall/render-benchmarks.dhall > /dev/null
+          dhall type --file dhall/render-quotas.dhall > /dev/null
+          dhall type --file dhall/render-roles.dhall > /dev/null
+
+  docs:
+    runs-on: ubuntu-latest
+    needs: [lint]
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+      pages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install MkDocs
+        run: pip install mkdocs-material pymdown-extensions
+      - name: Build docs
+        run: mkdocs build
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site

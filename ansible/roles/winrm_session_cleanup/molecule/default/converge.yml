@@ -1,6 +1,6 @@
 ---
 - name: Converge - WinRM session cleanup
-  hosts: vmnode852
+  hosts: win-target
   serial: 1
   gather_facts: false
   roles:

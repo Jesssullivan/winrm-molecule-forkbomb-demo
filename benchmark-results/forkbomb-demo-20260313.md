@@ -2,9 +2,9 @@
 
 ## Setup
 
-- Target: vmnode852 (Windows Server 2022, post-reboot)
-- Connection: WinRM HTTPS via SSH tunnel (localhost:15852 → vmnode852:5986)
-- Credentials: js-sdi via SOPS+age
+- Target: win-target (Windows Server 2022, post-reboot)
+- Connection: WinRM HTTPS via SSH tunnel (localhost:15986 → win-target:5986)
+- Credentials: svc-ansible via SOPS+age
 - Pressure test: 50 inventory entries pointing at same host
 
 ## Test 1: Safe Baseline (forks=5, single host)
@@ -67,7 +67,7 @@ reliably.
 1. **Forkbomb is reproducible** via multiple inventory entries against one host
 2. **MaxConcurrentUsers is the primary gate** — successes match this value
 3. **Error messages are misleading** — "ntlm:" instead of "quota exceeded"
-4. **Plugin-level quotas** are a hidden second layer (already maxed on vmnode852)
+4. **Plugin-level quotas** are a hidden second layer (already maxed on win-target)
 5. **SSH tunnel is a secondary bottleneck** — ~20 concurrent connections max
 6. **Single host + high forks** does NOT reproduce the issue (serial execution)
 
@@ -103,17 +103,17 @@ Connection: `ansible_connection=psrp`, `ansible_psrp_auth=ntlm`
 PSRP's connection pooling eliminates auth failures entirely. The remaining failures
 are SSH tunnel TCP timeouts (secondary bottleneck), not auth problems.
 
-## Test 6: jsullivan2 Permission Check
+## Test 6: Permission Check
 
-`Remote Management Users` group on vmnode852 is **empty**. Only `BUILTIN\Administrators`
+`Remote Management Users` group on win-target is **empty**. Only `BUILTIN\Administrators`
 members can connect via WinRM. This means:
-- `js-sdi`: Can connect (via vmnode852-island → Administrators)
-- `jsullivan2`: **Cannot connect** (standard AD user, not in any admin group)
-- Quota modification requires admin rights that jsullivan2 does not have
+- `svc-ansible`: Can connect (via win-target-island → Administrators)
+- Standard AD users: **Cannot connect** (not in any admin group)
+- Quota modification requires admin rights that standard users do not have
 
 ## AD Lockout Risk
 
 With 41 failed NTLM attempts in ~5 seconds:
 - AD lockout threshold = 5 failures in 15 min
 - **41 failures = 8x the lockout threshold in one burst**
-- All 8xx hosts sharing js-sdi account would be locked
+- All managed Windows hosts sharing svc-ansible account would be locked

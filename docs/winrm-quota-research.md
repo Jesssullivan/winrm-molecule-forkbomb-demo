@@ -442,7 +442,7 @@ The critical relationship for this project:
 
 - Ansible `forks` setting controls parallelism across hosts
 - Each fork creates its own WinRM connection and shell to the target
-- With molecule, **all forks target the same host** (vmnode852)
+- With molecule, **all forks target the same host** (win-target)
 - Therefore: `forks` > `MaxShellsPerUser` = **connection exhaustion**
 - With plugin-level defaults: `forks` > 25 = quota exceeded
 - With shell-level defaults: `forks` > 30 = quota exceeded

@@ -1,6 +1,6 @@
 ---
 galaxy_info:
-  author: jsullivan2
+  author: your-username
   description: Detect and terminate stale WinRM sessions, deploy scheduled cleanup task
   license: MIT
   min_ansible_version: "2.14"

@@ -1,10 +1,10 @@
-# Baseline Audit - vmnode852 - 2026-03-13
+# Baseline Audit - win-target - 2026-03-13
 
 ## System
 
 | Property | Value |
 |----------|-------|
-| Hostname | VMNODE852 |
+| Hostname | WIN-TARGET |
 | OS | Windows Server 2022 Standard |
 | Memory | 16 GB total, ~8 GB free |
 | Uptime | ~1 day 10h |
@@ -12,7 +12,7 @@
 
 ## WinRM Quotas (Pre-Existing State)
 
-Someone (EMS `common` role or manual intervention) previously set all shell quotas
+Someone (a prior project's `common` role or manual intervention) previously set all shell quotas
 to max int32. This is the state BEFORE any changes by this project.
 
 | Quota | Current Value | Windows Default | Notes |

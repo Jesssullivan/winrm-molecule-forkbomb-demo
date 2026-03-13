@@ -93,9 +93,9 @@ Computer Configuration → Administrative Templates → Windows Components:
 | IdleTimeout | 600000ms (10 min) |
 | MaxMemoryPerShellMB | 4096 |
 
-## Observed State: vmnode852 (2026-03-13)
+## Observed State: win-target (2026-03-13)
 
-The EMS `common` role previously set all shell quotas to max int32. This is the
+A prior project's `common` role previously set all shell quotas to max int32. This is the
 pre-existing state before any changes by this project:
 
 | Setting | Observed | Windows Default |
@@ -140,10 +140,10 @@ The three quota presets are defined type-safely in `dhall/quotas.dhall`:
 - **`safe`**: Elevated for normal automation (MaxShells=100). Handles forks=20 comfortably.
 - **`stress`**: Maximum values for benchmarking. Use with monitoring active.
 
-### Packaging for N&I
+### Packaging for Infrastructure Teams
 
 The quota config role could be extracted as a standalone Ansible collection or
-Galaxy role for N&I to deploy across all managed Windows hosts:
+Galaxy role for the infrastructure team to deploy across all managed Windows hosts:
 
 ```yaml
 # Example: include in any playbook

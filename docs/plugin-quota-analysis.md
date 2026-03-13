@@ -29,7 +29,7 @@ covers Shell-level quotas, so the plugin layer is the hidden bottleneck.
 
 ## Connection to KeePassXC Credential Plugin Issues
 
-### Observed Behavior in EMS
+### Observed Behavior
 
 During parallel molecule tests, KeePassXC credential resolution sometimes:
 - Times out or returns errors
@@ -56,9 +56,9 @@ inventory initialization. During parallel molecule execution:
 - **Plugin quota exhaustion** → concurrent PowerShell operations throttled →
   credential resolution latency increases → cascading timeouts
 
-### EMS Configuration
+### Prior Configuration
 
-The EMS `common` role correctly configures BOTH levels:
+A prior project's `common` role correctly configures BOTH levels:
 ```yaml
 # Shell level
 common_winrm_max_shells_per_user: 100
@@ -88,67 +88,67 @@ The PLAN.md fork bomb analysis is **Shell-centric** — it doesn't analyze:
 
 ## AD Account Permissions
 
-### js-sdi vs jsullivan2
+### svc-ansible vs Standard AD Accounts
 
 The ability to modify WSMan quotas requires specific AD group membership:
 
-| Operation | Required Permission | js-sdi | jsullivan2 |
-|-----------|-------------------|--------|------------|
+| Operation | Required Permission | svc-ansible | Standard AD user |
+|-----------|-------------------|-------------|------------------|
 | Read WSMan quotas | WinRM user access | Yes | ? |
-| Set Shell quotas | Local Administrator | Yes (SDI admin) | May vary |
-| Set Plugin quotas | Local Administrator | Yes (SDI admin) | May vary |
+| Set Shell quotas | Local Administrator | Yes (admin) | May vary |
+| Set Plugin quotas | Local Administrator | Yes (admin) | May vary |
 | Restart WinRM service | Local Administrator | Yes | May vary |
 | Modify GPO-controlled quotas | Domain Admin / GPO editor | Depends | No |
 
-**SDI accounts** (js-sdi, jlm-sdi, etc.) are domain admin or local admin on
-8xx hosts. Regular AD accounts (jsullivan2) may not have the same privilege
+**Service accounts** (svc-ansible, etc.) are domain admin or local admin on
+managed Windows hosts. Regular AD accounts may not have the same privilege
 level, which affects whether quota changes can be applied in automation.
 
-### vmnode852 Local Administrators Group (Observed 2026-03-13)
+### win-target Local Administrators Group (Observed 2026-03-13)
 
 ```
 BUILTIN\Administrators:
   - Administrator          (local account)
-  - BCIS\Domain Admins     (domain admin group)
-  - BCIS\drl-sdi           (individual SDI account)
-  - BCIS\NI-System-Admins  (Network & Infrastructure group)
-  - BCIS\Tenable Nessus Scan  (vulnerability scanner)
-  - BCIS\vmnode852-island   (per-host island group)
+  - YOURDOM\Domain Admins     (domain admin group)
+  - YOURDOM\other-admin       (individual admin account)
+  - YOURDOM\Infra-Admins      (infrastructure team group)
+  - YOURDOM\Vuln-Scanner      (vulnerability scanner)
+  - YOURDOM\win-target-island  (per-host island group)
 ```
 
-### How js-sdi Gets Admin Rights
+### How svc-ansible Gets Admin Rights
 
-`js-sdi` is a member of `BCIS\vmnode852-island` (the per-host AD group), which
+`svc-ansible` is a member of `YOURDOM\win-target-island` (the per-host AD group), which
 is in the local Administrators group. This is the "island" pattern — each
-vmnode has its own AD group, and SDI accounts are added per-host.
+host has its own AD group, and service accounts are added per-host.
 
-**Notable**: `js-sdi` is NOT a Domain Admin. Admin rights come from island
+**Notable**: `svc-ansible` is NOT a Domain Admin. Admin rights come from island
 group membership, not domain-level privilege.
 
-### jsullivan2 vs js-sdi
+### Service Account vs Standard AD Account
 
-| Capability | js-sdi | jsullivan2 |
-|------------|--------|------------|
-| Local admin on vmnode852 | Yes (via island group) | No (standard user) |
+| Capability | svc-ansible | Standard AD user |
+|------------|-------------|------------------|
+| Local admin on win-target | Yes (via island group) | No (standard user) |
 | Modify WSMan quotas | Yes | No |
 | Restart WinRM service | Yes | No |
 | Read WSMan quotas | Yes | Possibly (WinRM user) |
-| RDP access | Yes | Yes (via BCIS\Staff?) |
+| RDP access | Yes | Yes (via YOURDOM\Staff?) |
 | Domain Admin | No | No |
 
 ### Implications for Automation
 
-1. **Quota changes require SDI account** — `jsullivan2` cannot modify quotas
+1. **Quota changes require service account** — standard AD users cannot modify quotas
 2. **Island group pattern** means admin access is per-host, not blanket
-3. **N&I (NI-System-Admins)** also has admin rights — they can set quotas
+3. **Infra-Admins** also has admin rights — the infrastructure team can set quotas
    via GPO or direct configuration independently
 4. A **dedicated automation service account** in the island group would be
    the production pattern for unattended quota management
 
 ### Research Questions
 
-1. Can `jsullivan2` connect to WinRM at all? (WinRM may require admin or
+1. Can standard AD users connect to WinRM at all? (WinRM may require admin or
    explicit WinRM user group membership)
-2. Does the `BCIS\vmnode852-island` group exist for ALL 8xx hosts?
-3. Could a GPO set safe defaults for all 8xx hosts simultaneously?
-4. Should the quota config role be run by N&I rather than developers?
+2. Does the per-host island group exist for ALL managed Windows hosts?
+3. Could a GPO set safe defaults for all managed Windows hosts simultaneously?
+4. Should the quota config role be run by the infrastructure team rather than developers?

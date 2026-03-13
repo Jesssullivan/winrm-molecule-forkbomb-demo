@@ -1,4 +1,4 @@
 creation_rules:
   - path_regex: secrets/.*\.ya?ml$
     encrypted_regex: "^(username|password)$"
-    age: age1wc2s9pfju7haufdw0at0pm2cxx9rs9qmj80nf0nzy82w0fr0gp3skzfgds
+    age: age1your-public-key-here

@@ -1,0 +1,29 @@
+---
+# Site-specific configuration - copy to site.yml and customize.
+# site.yml is gitignored and should never be committed.
+
+# Target Windows host
+target_hostname: win-target-01
+target_fqdn: win-target-01.example.com
+target_environment: development
+target_os: "Windows Server 2022"
+
+# SSH tunnel configuration
+tunnel_bastion_host: bastion.example.com
+tunnel_local_port: 15986
+tunnel_remote_port: 5986
+
+# AD domain
+ad_domain: EXAMPLE
+ad_admin_account: svc-ansible
+ad_island_group: "{{ target_hostname }}-island"
+
+# WinRM credential source (SOPS file path)
+winrm_creds_file: "secrets/winrm-creds.enc.yaml"
+
+# IIS demo site
+iis_site_github_owner: your-org
+iis_site_github_repo: winrm-molecule-forkbomb-demo
+
+# Grafana/OTEL (optional)
+winrm_monitoring_loki_url: ""

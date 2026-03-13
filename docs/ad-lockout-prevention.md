@@ -27,8 +27,8 @@
 ### After an Incident
 
 1. **STOP all automation immediately**
-2. Check if account is locked: `Get-ADUser -Identity js-sdi -Properties LockedOut`
-3. Unlock if needed: `Unlock-ADAccount -Identity js-sdi` (requires Domain Admin)
+2. Check if account is locked: `Get-ADUser -Identity svc-ansible -Properties LockedOut`
+3. Unlock if needed: `Unlock-ADAccount -Identity svc-ansible` (requires Domain Admin)
 4. Wait for lockout duration to expire (typically 15-30 min)
 5. Run `just audit` to verify quotas
 6. Run `just deploy-quotas` to elevate quotas
@@ -53,5 +53,5 @@
 
 ## Shared Account Risk
 
-All 8xx hosts share the `js-sdi` AD account. One lockout = all hosts locked.
+All managed Windows hosts share the `svc-ansible` AD account. One lockout = all hosts locked.
 This is the primary risk factor for the forkbomb scenario.

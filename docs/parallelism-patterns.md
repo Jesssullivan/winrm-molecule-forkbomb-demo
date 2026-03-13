@@ -141,7 +141,7 @@ With default Windows quotas (MaxShellsPerUser=30, MaxConcurrentUsers=10):
 windows_pressure:
   hosts:
     win-[01:50]:
-      ansible_host: vmnode852.bcis.bates.edu
+      ansible_host: win-target.example.com
 ```
 
 This creates 50 "hosts" pointing to one machine, exercising forks=50 simultaneously.

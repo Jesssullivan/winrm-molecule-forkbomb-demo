@@ -6,7 +6,7 @@ driver:
   name: default
 
 platforms:
-  - name: vmnode852
+  - name: win-target
     managed: false
     groups:
       - windows

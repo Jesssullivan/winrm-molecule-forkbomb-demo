@@ -1,7 +1,7 @@
 ---
 galaxy_info:
   role_name: winrm_monitoring
-  author: jsullivan2
+  author: your-username
   description: >-
     WinRM observability for the forkbomb demo. Deploys a scheduled PowerShell
     metrics collector (Prometheus textfile format) and Grafana Alloy event log

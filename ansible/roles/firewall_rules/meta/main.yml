@@ -1,6 +1,6 @@
 ---
 galaxy_info:
-  author: jsullivan2
+  author: your-username
   description: Configure Windows Firewall rules for IIS and WinRM access
   license: MIT
   min_ansible_version: "2.15"

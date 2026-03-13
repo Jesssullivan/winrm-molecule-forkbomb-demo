@@ -24,7 +24,7 @@ Each failure = failed NTLM auth → AD lockout after 5 failures
 direnv allow                 # Enter nix dev shell
 just setup                   # Install deps + collections
 sops secrets/winrm-creds.enc.yaml  # Configure credentials
-just tunnel-start            # SSH tunnel to vmnode852
+just tunnel-start            # SSH tunnel to win-target
 just audit                   # Verify connectivity + baseline quotas
 
 # Demo the forkbomb

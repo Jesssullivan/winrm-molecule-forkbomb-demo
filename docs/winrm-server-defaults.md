@@ -163,7 +163,7 @@ DISA STIG (V-254242, V-254243):
 | Single Ansible controller | 100 | 25 | Handles forks=20 |
 | Multiple automation tools | 200+ | 50+ | Ansible + SCCM + GPO |
 | CI/CD with parallel molecule | 500+ | 100+ | Or use pypsrp |
-| Stress testing / research | max int32 | max int32 | Current vmnode852 state |
+| Stress testing / research | max int32 | max int32 | Current win-target state |
 
 ## References
 

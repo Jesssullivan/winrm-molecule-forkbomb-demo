@@ -16,7 +16,7 @@ setup:
 
 # ── TUNNELS ────────────────────────────────────────────────────────
 
-# Start SSH tunnel to vmnode852 (localhost:15852 → vmnode852:5986)
+# Start SSH tunnel to win-target (localhost:15986 → win-target:5986)
 tunnel-start:
     scripts/start-tunnel.sh start
 

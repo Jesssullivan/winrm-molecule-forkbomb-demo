@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# SSH tunnel management for vmnode852 WinRM access.
-# Creates a local port forward: localhost:15852 → vmnode852.bcis.bates.edu:5986
+# SSH tunnel management for WinRM access via bastion host.
+# Customize via environment variables or .env file.
 
-TUNNEL_HOST="xoxd-bates"
-LOCAL_PORT=15852
-REMOTE_HOST="vmnode852.bcis.bates.edu"
-REMOTE_PORT=5986
+TUNNEL_HOST="${WINRM_BASTION_HOST:-bastion.example.com}"
+LOCAL_PORT="${WINRM_TUNNEL_PORT:-15986}"
+REMOTE_HOST="${WINRM_TARGET_FQDN:-win-target.example.com}"
+REMOTE_PORT="${WINRM_TARGET_PORT:-5986}"
 PID_FILE="/tmp/forkbomb-demo-tunnel.pid"
 
 usage() {
@@ -17,6 +17,12 @@ usage() {
     echo "  stop    - Stop SSH tunnel"
     echo "  status  - Show tunnel status"
     echo "  check   - Check if tunnel is functional (test WinRM port)"
+    echo ""
+    echo "Environment variables:"
+    echo "  WINRM_BASTION_HOST  - SSH bastion/jump host (default: bastion.example.com)"
+    echo "  WINRM_TUNNEL_PORT   - Local tunnel port (default: 15986)"
+    echo "  WINRM_TARGET_FQDN   - Target Windows host FQDN"
+    echo "  WINRM_TARGET_PORT   - Target WinRM port (default: 5986)"
     exit 1
 }
 
@@ -34,7 +40,6 @@ start_tunnel() {
         -o ExitOnForwardFailure=yes \
         "${TUNNEL_HOST}"
 
-    # Find the PID of the tunnel process
     local pid
     pid=$(pgrep -f "ssh.*-L.*${LOCAL_PORT}:${REMOTE_HOST}" | head -1)
 
@@ -60,7 +65,6 @@ stop_tunnel() {
         rm -f "$PID_FILE"
     else
         echo "No tunnel PID file found"
-        # Try to find and kill by pattern
         local pid
         pid=$(pgrep -f "ssh.*-L.*${LOCAL_PORT}:${REMOTE_HOST}" | head -1)
         if [ -n "$pid" ]; then

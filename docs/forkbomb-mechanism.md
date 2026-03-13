@@ -84,7 +84,7 @@ AD lockout threshold = 5 → LOCKED after first 5 failures
                │              │              │
                ▼              ▼              ▼
         ┌──────────────────────────────────────────┐
-        │        vmnode852 (MaxShellsPerUser=30)    │
+        │     win-target (MaxShellsPerUser=30)      │
         │                                          │
         │  Shell slots:  [##########]  (30 max)    │
         │  Concurrent:   15 × 3 = 45 attempted     │
