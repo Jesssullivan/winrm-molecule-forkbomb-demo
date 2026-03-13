@@ -69,29 +69,27 @@ AD lockout threshold = 5 → LOCKED after first 5 failures
 
 ## The Compounding Effect
 
-```
-                    ┌─────────────────┐
-                    │  parallel -j4   │
-                    │  molecule test  │
-                    └────┬───┬───┬───┘
-                         │   │   │
-              ┌──────────┘   │   └──────────┐
-              ▼              ▼              ▼
-         ┌─────────┐   ┌─────────┐   ┌─────────┐
-         │ forks=5  │   │ forks=5  │   │ forks=5  │
-         │ Scenario1│   │ Scenario2│   │ Scenario3│
-         └─────┬───┘   └─────┬───┘   └─────┬───┘
-               │              │              │
-               ▼              ▼              ▼
-        ┌──────────────────────────────────────────┐
-        │     win-target (MaxShellsPerUser=30)      │
-        │                                          │
-        │  Shell slots:  [##########]  (30 max)    │
-        │  Concurrent:   15 × 3 = 45 attempted     │
-        │  Overflow:     15 → "credentials rejected"│
-        │  AD impact:    15 failed NTLM attempts   │
-        │  Lockout:      YES (threshold=5)         │
-        └──────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    A["parallel -j4<br/>molecule test"] --> B["Scenario 1<br/>forks=5"]
+    A --> C["Scenario 2<br/>forks=5"]
+    A --> D["Scenario 3<br/>forks=5"]
+
+    B --> E
+    C --> E
+    D --> E
+
+    E["win-target<br/>MaxShellsPerUser=30"]
+
+    E --> F{"45 shells attempted<br/>30 max slots"}
+
+    F -->|"30 accepted"| G["Successful tasks"]
+    F -->|"15 overflow"| H["'credentials rejected'<br/>15 failed NTLM attempts"]
+    H --> I["AD lockout threshold=5<br/>LOCKED"]
+
+    style E fill:#f9f,stroke:#333,stroke-width:2px
+    style H fill:#f66,stroke:#333,stroke-width:2px
+    style I fill:#900,stroke:#333,stroke-width:2px,color:#fff
 ```
 
 ## The Fix (Two-Part)

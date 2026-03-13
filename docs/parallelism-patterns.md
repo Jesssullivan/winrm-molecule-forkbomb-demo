@@ -65,12 +65,25 @@ re-authentication happens for each new TCP connection.
 
 ### Runspace Pool Architecture
 
-```
-Ansible Fork 1 ─────┐
-  Task A ────────────┤
-  Task B ────────────┤──→ Single WinRM Connection ──→ Windows Host
-  Task C ────────────┤    (NTLM auth ONCE)
-  Task D ────────────┘
+```mermaid
+flowchart LR
+    subgraph fork["Ansible Fork 1"]
+        A["Task A"]
+        B["Task B"]
+        C["Task C"]
+        D["Task D"]
+    end
+
+    conn["Single WinRM Connection<br/>NTLM auth ONCE"]
+    host["Windows Host"]
+
+    A --> conn
+    B --> conn
+    C --> conn
+    D --> conn
+    conn --> host
+
+    style conn fill:#9f9,stroke:#333,stroke-width:2px
 ```
 
 - **One TCP connection** per RunspacePool, reused for ALL commands
