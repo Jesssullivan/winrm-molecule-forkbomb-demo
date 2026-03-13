@@ -1222,13 +1222,26 @@ concurrent connections.</p>
 <li><strong>0 UNREACHABLE</strong> (zero authentication failures)</li>
 <li><strong>26 FAILED</strong> with <code>HTTPSConnectionPool: Read timed out</code> (SSH tunnel bottleneck)</li>
 </ul>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>                   pywinrm          pypsrp
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>                   -------          ------
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>Successes:         9                24
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>Error type:        UNREACHABLE      FAILED (timeout)
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>Auth failures:     41               0
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>AD lockout risk:   HIGH             NONE
-</code></pre></div>
+<pre class="mermaid"><code>---
+config:
+  theme: default
+---
+block-beta
+    columns 3
+    space header1["pywinrm"] header2["pypsrp"]
+    r1["Successes"] r1a["9"] r1b["24"]
+    r2["Error type"] r2a["UNREACHABLE"] r2b["FAILED (timeout)"]
+    r3["Auth failures"] r3a["41"] r3b["0"]
+    r4["AD lockout risk"] r4a["HIGH"] r4b["NONE"]
+
+    style r1a fill:#f66,stroke:#333
+    style r2a fill:#f66,stroke:#333
+    style r3a fill:#f66,stroke:#333
+    style r4a fill:#f66,stroke:#333
+    style r1b fill:#9f9,stroke:#333
+    style r2b fill:#ff9,stroke:#333
+    style r3b fill:#9f9,stroke:#333
+    style r4b fill:#9f9,stroke:#333</code></pre>
 <div class="admonition success">
 <p class="admonition-title">Key Finding</p>
 <p>pypsrp's connection pooling eliminates authentication failures entirely.
@@ -1252,19 +1265,29 @@ OS reboot.</p>
 <p><strong>Mitigation</strong>: WSMan quota changes take effect immediately without a service restart.
 The restart handler should be removed from quota configuration roles.</p>
 <h2 id="bottleneck-hierarchy">Bottleneck Hierarchy<a class="headerlink" href="#bottleneck-hierarchy" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Layer 1: MaxConcurrentUsers (primary gate)
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>  └─ Determines how many sessions can authenticate simultaneously
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>  └─ Failures appear as NTLM auth errors (misleading)
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>Layer 2: MaxShellsPerUser (secondary gate)
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>  └─ Not reached if MaxConcurrentUsers is hit first
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>  └─ Only relevant for long-lived parallel sessions
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>Layer 3: SSH tunnel TCP pool (~20 connections)
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>  └─ Infrastructure bottleneck, not WinRM
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>  └─ Causes timeouts, not auth failures
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>  └─ Does NOT trigger AD lockout
-</code></pre></div>
+<pre class="mermaid"><code>flowchart TD
+    L1["Layer 1: MaxConcurrentUsers&lt;br/&gt;&lt;b&gt;Primary gate&lt;/b&gt;"]
+    L1a["Determines how many sessions&lt;br/&gt;can authenticate simultaneously"]
+    L1b["Failures appear as NTLM&lt;br/&gt;auth errors (misleading)"]
+
+    L2["Layer 2: MaxShellsPerUser&lt;br/&gt;&lt;b&gt;Secondary gate&lt;/b&gt;"]
+    L2a["Not reached if&lt;br/&gt;MaxConcurrentUsers is hit first"]
+    L2b["Only relevant for&lt;br/&gt;long-lived parallel sessions"]
+
+    L3["Layer 3: SSH tunnel TCP pool&lt;br/&gt;&lt;b&gt;~20 connections&lt;/b&gt;"]
+    L3a["Infrastructure bottleneck,&lt;br/&gt;not WinRM"]
+    L3b["Causes timeouts,&lt;br/&gt;not auth failures"]
+    L3c["Does NOT trigger&lt;br/&gt;AD lockout"]
+
+    L1 --&gt; L1a &amp; L1b
+    L1 ==&gt; L2
+    L2 --&gt; L2a &amp; L2b
+    L2 ==&gt; L3
+    L3 --&gt; L3a &amp; L3b &amp; L3c
+
+    style L1 fill:#f66,stroke:#333,stroke-width:2px
+    style L2 fill:#f96,stroke:#333,stroke-width:2px
+    style L3 fill:#ff9,stroke:#333,stroke-width:2px</code></pre>
 <h2 id="quota-state-comparison">Quota State Comparison<a class="headerlink" href="#quota-state-comparison" title="Permanent link">&para;</a></h2>
 <table>
 <thead>

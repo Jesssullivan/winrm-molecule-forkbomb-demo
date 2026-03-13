@@ -1284,36 +1284,33 @@ for every task</strong>. There is no connection pooling or session reuse across 
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>AD lockout threshold = 5 → LOCKED after first 5 failures
 </code></pre></div>
 <h2 id="the-compounding-effect">The Compounding Effect<a class="headerlink" href="#the-compounding-effect" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>                    ┌─────────────────┐
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>                    │  parallel -j4   │
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>                    │  molecule test  │
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>                    └────┬───┬───┬───┘
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>                         │   │   │
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>              ┌──────────┘   │   └──────────┐
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>              ▼              ▼              ▼
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>         ┌─────────┐   ┌─────────┐   ┌─────────┐
-<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>         │ forks=5  │   │ forks=5  │   │ forks=5  │
-<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>         │ Scenario1│   │ Scenario2│   │ Scenario3│
-<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>         └─────┬───┘   └─────┬───┘   └─────┬───┘
-<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>               │              │              │
-<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>               ▼              ▼              ▼
-<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>        ┌──────────────────────────────────────────┐
-<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>        │     win-target (MaxShellsPerUser=30)      │
-<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>        │                                          │
-<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>        │  Shell slots:  [##########]  (30 max)    │
-<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>        │  Concurrent:   15 × 3 = 45 attempted     │
-<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>        │  Overflow:     15 → &quot;credentials rejected&quot;│
-<a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>        │  AD impact:    15 failed NTLM attempts   │
-<a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>        │  Lockout:      YES (threshold=5)         │
-<a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a>        └──────────────────────────────────────────┘
-</code></pre></div>
+<pre class="mermaid"><code>flowchart TD
+    A["parallel -j4&lt;br/&gt;molecule test"] --&gt; B["Scenario 1&lt;br/&gt;forks=5"]
+    A --&gt; C["Scenario 2&lt;br/&gt;forks=5"]
+    A --&gt; D["Scenario 3&lt;br/&gt;forks=5"]
+
+    B --&gt; E
+    C --&gt; E
+    D --&gt; E
+
+    E["win-target&lt;br/&gt;MaxShellsPerUser=30"]
+
+    E --&gt; F{"45 shells attempted&lt;br/&gt;30 max slots"}
+
+    F --&gt;|"30 accepted"| G["Successful tasks"]
+    F --&gt;|"15 overflow"| H["'credentials rejected'&lt;br/&gt;15 failed NTLM attempts"]
+    H --&gt; I["AD lockout threshold=5&lt;br/&gt;LOCKED"]
+
+    style E fill:#f9f,stroke:#333,stroke-width:2px
+    style H fill:#f66,stroke:#333,stroke-width:2px
+    style I fill:#900,stroke:#333,stroke-width:2px,color:#fff</code></pre>
 <h2 id="the-fix-two-part">The Fix (Two-Part)<a class="headerlink" href="#the-fix-two-part" title="Permanent link">&para;</a></h2>
 <h3 id="part-1-raise-winrm-quotas-admin-toggle">Part 1: Raise WinRM Quotas (Admin Toggle)<a class="headerlink" href="#part-1-raise-winrm-quotas-admin-toggle" title="Permanent link">&para;</a></h3>
 <p>The <code>winrm_quota_config</code> role elevates quotas before parallel testing:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nb">Set-Item</span> <span class="n">WSMan</span><span class="p">:\</span><span class="n">localhost</span><span class="p">\</span><span class="n">Shell</span><span class="p">\</span><span class="n">MaxShellsPerUser</span> <span class="n">-Value</span> <span class="n">100</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nb">Set-Item</span> <span class="n">WSMan</span><span class="p">:\</span><span class="n">localhost</span><span class="p">\</span><span class="n">Service</span><span class="p">\</span><span class="n">MaxConcurrentUsers</span> <span class="n">-Value</span> <span class="n">25</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="nb">Set-Item</span> <span class="n">WSMan</span><span class="p">:\</span><span class="n">localhost</span><span class="p">\</span><span class="n">Shell</span><span class="p">\</span><span class="n">MaxProcessesPerShell</span> <span class="n">-Value</span> <span class="n">50</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="nb">Set-Item</span> <span class="n">WSMan</span><span class="p">:\</span><span class="n">localhost</span><span class="p">\</span><span class="n">Shell</span><span class="p">\</span><span class="n">IdleTimeout</span> <span class="n">-Value</span> <span class="n">300000</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nb">Set-Item</span> <span class="n">WSMan</span><span class="p">:\</span><span class="n">localhost</span><span class="p">\</span><span class="n">Shell</span><span class="p">\</span><span class="n">MaxShellsPerUser</span> <span class="n">-Value</span> <span class="n">100</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nb">Set-Item</span> <span class="n">WSMan</span><span class="p">:\</span><span class="n">localhost</span><span class="p">\</span><span class="n">Service</span><span class="p">\</span><span class="n">MaxConcurrentUsers</span> <span class="n">-Value</span> <span class="n">25</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nb">Set-Item</span> <span class="n">WSMan</span><span class="p">:\</span><span class="n">localhost</span><span class="p">\</span><span class="n">Shell</span><span class="p">\</span><span class="n">MaxProcessesPerShell</span> <span class="n">-Value</span> <span class="n">50</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="nb">Set-Item</span> <span class="n">WSMan</span><span class="p">:\</span><span class="n">localhost</span><span class="p">\</span><span class="n">Shell</span><span class="p">\</span><span class="n">IdleTimeout</span> <span class="n">-Value</span> <span class="n">300000</span>
 </code></pre></div>
 <h3 id="part-2-session-cleanup">Part 2: Session Cleanup<a class="headerlink" href="#part-2-session-cleanup" title="Permanent link">&para;</a></h3>
 <p>The <code>winrm_session_cleanup</code> role installs a scheduled task that:

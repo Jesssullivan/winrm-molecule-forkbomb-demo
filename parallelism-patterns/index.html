@@ -1528,12 +1528,24 @@ Each Ansible fork (separate process) gets its own Protocol — safe by isolation
 re-authentication happens for each new TCP connection.</p>
 <h2 id="pypsrp-connection-model-the-fix">pypsrp Connection Model (The Fix)<a class="headerlink" href="#pypsrp-connection-model-the-fix" title="Permanent link">&para;</a></h2>
 <h3 id="runspace-pool-architecture">Runspace Pool Architecture<a class="headerlink" href="#runspace-pool-architecture" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Ansible Fork 1 ─────┐
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>  Task A ────────────┤
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>  Task B ────────────┤──→ Single WinRM Connection ──→ Windows Host
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>  Task C ────────────┤    (NTLM auth ONCE)
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>  Task D ────────────┘
-</code></pre></div>
+<pre class="mermaid"><code>flowchart LR
+    subgraph fork["Ansible Fork 1"]
+        A["Task A"]
+        B["Task B"]
+        C["Task C"]
+        D["Task D"]
+    end
+
+    conn["Single WinRM Connection&lt;br/&gt;NTLM auth ONCE"]
+    host["Windows Host"]
+
+    A --&gt; conn
+    B --&gt; conn
+    C --&gt; conn
+    D --&gt; conn
+    conn --&gt; host
+
+    style conn fill:#9f9,stroke:#333,stroke-width:2px</code></pre>
 <ul>
 <li><strong>One TCP connection</strong> per RunspacePool, reused for ALL commands</li>
 <li>Authentication happens <strong>once</strong> at pool creation</li>
@@ -1542,30 +1554,30 @@ re-authentication happens for each new TCP connection.</p>
 <li>50-65% faster than pywinrm for repeated operations</li>
 </ul>
 <h3 id="key-psrp-settings">Key PSRP Settings<a class="headerlink" href="#key-psrp-settings" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">ansible_psrp_reconnection_retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span><span class="w">    </span><span class="c1"># default 0</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nt">ansible_psrp_reconnection_backoff</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span><span class="w">    </span><span class="c1"># exponential backoff seconds</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nt">ansible_psrp_operation_timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">20</span><span class="w">      </span><span class="c1"># seconds</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="nt">ansible_psrp_read_timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span><span class="w">           </span><span class="c1"># seconds</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="nt">ansible_psrp_connection_timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span><span class="w">     </span><span class="c1"># seconds</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">ansible_psrp_reconnection_retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span><span class="w">    </span><span class="c1"># default 0</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nt">ansible_psrp_reconnection_backoff</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span><span class="w">    </span><span class="c1"># exponential backoff seconds</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nt">ansible_psrp_operation_timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">20</span><span class="w">      </span><span class="c1"># seconds</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="nt">ansible_psrp_read_timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span><span class="w">           </span><span class="c1"># seconds</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nt">ansible_psrp_connection_timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span><span class="w">     </span><span class="c1"># seconds</span>
 </code></pre></div>
 <h2 id="molecule-parallelism">Molecule Parallelism<a class="headerlink" href="#molecule-parallelism" title="Permanent link">&para;</a></h2>
 <h3 id="native-parallel-flag">Native <code>--parallel</code> Flag<a class="headerlink" href="#native-parallel-flag" title="Permanent link">&para;</a></h3>
 <p>Uses Python <code>multiprocessing</code> process pool. Each scenario gets a UUID-based
 ephemeral directory for isolation. Platform names auto-suffixed.</p>
 <h3 id="pytest-xdist">pytest-xdist<a class="headerlink" href="#pytest-xdist" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nv">MOLECULE_OPTS</span><span class="o">=</span><span class="s2">&quot;--parallel&quot;</span><span class="w"> </span>pytest<span class="w"> </span>--numprocesses<span class="w"> </span>auto<span class="w"> </span>--molecule<span class="w"> </span>roles/
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nv">MOLECULE_OPTS</span><span class="o">=</span><span class="s2">&quot;--parallel&quot;</span><span class="w"> </span>pytest<span class="w"> </span>--numprocesses<span class="w"> </span>auto<span class="w"> </span>--molecule<span class="w"> </span>roles/
 </code></pre></div>
 <p>Each worker gets <code>PYTEST_XDIST_WORKER</code> env var for unique naming.</p>
 <h3 id="critical-prerun-race-condition">Critical: Prerun Race Condition<a class="headerlink" href="#critical-prerun-race-condition" title="Permanent link">&para;</a></h3>
 <p>Galaxy collection installation is NOT parallel-safe. Multiple processes installing
 the same collection cause <code>File exists</code> errors.</p>
 <p><strong>Fix</strong>: Disable prerun, install deps serially first:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># .config/molecule/config.yml</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nt">prerun</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># .config/molecule/config.yml</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nt">prerun</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Install deps once, then run parallel</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>ansible-galaxy<span class="w"> </span>collection<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.yml
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="nv">MOLECULE_OPTS</span><span class="o">=</span><span class="s2">&quot;--parallel&quot;</span><span class="w"> </span>pytest<span class="w"> </span>--numprocesses<span class="w"> </span>auto<span class="w"> </span>--molecule<span class="w"> </span>roles/
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Install deps once, then run parallel</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>ansible-galaxy<span class="w"> </span>collection<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.yml
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="nv">MOLECULE_OPTS</span><span class="o">=</span><span class="s2">&quot;--parallel&quot;</span><span class="w"> </span>pytest<span class="w"> </span>--numprocesses<span class="w"> </span>auto<span class="w"> </span>--molecule<span class="w"> </span>roles/
 </code></pre></div></p>
 <h3 id="known-issue-molecule-2520-regression">Known Issue: Molecule 25.2.0 Regression<a class="headerlink" href="#known-issue-molecule-2520-regression" title="Permanent link">&para;</a></h3>
 <p>Issue #4408: Removed UUID-based ephemeral directory isolation, breaking parallel
@@ -1577,16 +1589,16 @@ execution. Check your molecule version before relying on <code>--parallel</code>
 - forks=30 would saturate MaxShellsPerUser
 - forks=50 would exceed it → errors</p>
 <h3 id="inventory-trick-multiple-entries-same-host">Inventory Trick (Multiple Entries, Same Host)<a class="headerlink" href="#inventory-trick-multiple-entries-same-host" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Create artificial parallelism against single host</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nt">windows_pressure</span><span class="p">:</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span><span class="nt">hosts</span><span class="p">:</span>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">win-[01:50]</span><span class="p p-Indicator">:</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">      </span><span class="nt">ansible_host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">win-target.example.com</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Create artificial parallelism against single host</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="nt">windows_pressure</span><span class="p">:</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span><span class="nt">hosts</span><span class="p">:</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">win-[01:50]</span><span class="p p-Indicator">:</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">      </span><span class="nt">ansible_host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">win-target.example.com</span>
 </code></pre></div>
 <p>This creates 50 "hosts" pointing to one machine, exercising forks=50 simultaneously.</p>
 <h3 id="the-forkbomb-formula">The Forkbomb Formula<a class="headerlink" href="#the-forkbomb-formula" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>parallel_molecule_processes × ansible_forks × tasks_per_role = total_shell_attempts
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>4 × 5 × 15 = 300 attempts against MaxShellsPerUser=30
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>parallel_molecule_processes × ansible_forks × tasks_per_role = total_shell_attempts
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>4 × 5 × 15 = 300 attempts against MaxShellsPerUser=30
 </code></pre></div>
 <h3 id="error-when-quota-exceeded">Error When Quota Exceeded<a class="headerlink" href="#error-when-quota-exceeded" title="Permanent link">&para;</a></h3>
 <p>HTTP 500 from WinRM: "The maximum number of concurrent operations for this user
@@ -1600,15 +1612,15 @@ has been exceeded". Ansible reports as task FAILED, not UNREACHABLE.</p>
 <li><code>meta: reset_connection</code> forces reconnection with new NTLM handshake</li>
 </ul>
 <h2 id="monitoring-during-benchmarks">Monitoring During Benchmarks<a class="headerlink" href="#monitoring-during-benchmarks" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c"># Real-time shell count</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="nb">Get-Process</span> <span class="n">wsmprovhost</span> <span class="p">|</span> <span class="nb">Measure-Object</span>
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c"># Performance counters</span>
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="nb">Get-Counter</span> <span class="s2">&quot;\WS-Management\Active Shell Sessions&quot;</span><span class="p">,</span>
-<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>  <span class="s2">&quot;\WS-Management\Active Operations&quot;</span> <span class="n">-SampleInterval</span> <span class="n">1</span>
-<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>
-<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="c"># Event log (quota exhaustion = Event ID 142)</span>
-<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="nb">Get-EventLog</span> <span class="n">-LogName</span> <span class="n">System</span> <span class="n">-Source</span> <span class="n">WinRM</span> <span class="n">-Newest</span> <span class="n">100</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c"># Real-time shell count</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nb">Get-Process</span> <span class="n">wsmprovhost</span> <span class="p">|</span> <span class="nb">Measure-Object</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c"># Performance counters</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="nb">Get-Counter</span> <span class="s2">&quot;\WS-Management\Active Shell Sessions&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>  <span class="s2">&quot;\WS-Management\Active Operations&quot;</span> <span class="n">-SampleInterval</span> <span class="n">1</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="c"># Event log (quota exhaustion = Event ID 142)</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="nb">Get-EventLog</span> <span class="n">-LogName</span> <span class="n">System</span> <span class="n">-Source</span> <span class="n">WinRM</span> <span class="n">-Newest</span> <span class="n">100</span>
 </code></pre></div>
 
 
