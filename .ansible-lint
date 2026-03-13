@@ -6,12 +6,14 @@ skip_list:
   - name[missing]
   - role-name
   - var-naming[no-role-prefix]
-  - syntax-check[specific]
 
 warn_list:
   - experimental
 
 offline: false
+
+exclude_paths:
+  - ansible/roles/*/molecule/
 
 kinds:
   - playbook: "ansible/playbooks/*.yml"
