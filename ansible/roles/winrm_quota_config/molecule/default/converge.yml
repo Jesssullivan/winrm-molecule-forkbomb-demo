@@ -1,0 +1,8 @@
+---
+- name: Converge - configure WinRM quotas
+  hosts: all
+  serial: 1
+  gather_facts: false
+
+  roles:
+    - role: winrm_quota_config

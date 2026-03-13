@@ -1,0 +1,18 @@
+---
+# Maximum age in minutes before a WinRM session is considered stale
+winrm_cleanup_max_age_minutes: 30
+
+# How often the scheduled task runs (in minutes)
+winrm_cleanup_schedule_interval_minutes: 15
+
+# Whether to install the Windows Scheduled Task for automatic cleanup
+winrm_cleanup_install_scheduled_task: true
+
+# When true, enumerate stale sessions but do not terminate them
+winrm_cleanup_dry_run: false
+
+# Where the cleanup script is deployed on the Windows host
+winrm_cleanup_script_path: 'C:\Scripts\cleanup-winrm-sessions.ps1'
+
+# Write cleanup actions to the Windows Application Event Log
+winrm_cleanup_log_to_eventlog: true

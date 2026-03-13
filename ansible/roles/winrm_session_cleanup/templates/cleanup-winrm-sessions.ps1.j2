@@ -1,0 +1,112 @@
+#Requires -Version 5.1
+<#
+.SYNOPSIS
+    Cleans up stale WinRM sessions to prevent quota exhaustion.
+
+.DESCRIPTION
+    Enumerates active WinRM shells via WSMan, calculates each shell's age,
+    and terminates sessions older than the configured threshold.
+    Deployed and managed by Ansible role winrm_session_cleanup.
+
+.NOTES
+    Max age threshold : {{ winrm_cleanup_max_age_minutes }} minutes
+    Log to Event Log  : {{ winrm_cleanup_log_to_eventlog | string }}
+    Dry run           : {{ winrm_cleanup_dry_run | string }}
+#>
+
+[CmdletBinding()]
+param()
+
+$ErrorActionPreference = 'Continue'
+$MaxAgeMinutes = {{ winrm_cleanup_max_age_minutes }}
+$LogToEventLog = ${{ winrm_cleanup_log_to_eventlog | string | lower }}
+$DryRun = ${{ winrm_cleanup_dry_run | string | lower }}
+$EventSource = 'WinRM-Cleanup'
+
+# --- Event Log setup ---
+if ($LogToEventLog) {
+    try {
+        if (-not [System.Diagnostics.EventLog]::SourceExists($EventSource)) {
+            New-EventLog -LogName Application -Source $EventSource
+        }
+    } catch {
+        Write-Warning "Could not register event source '$EventSource': $_"
+        $LogToEventLog = $false
+    }
+}
+
+function Write-CleanupLog {
+    param(
+        [string]$Message,
+        [System.Diagnostics.EventLogEntryType]$EntryType = 'Information',
+        [int]$EventId = 1000
+    )
+    $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+    Write-Output "[$timestamp] $Message"
+    if ($LogToEventLog) {
+        try {
+            Write-EventLog -LogName Application -Source $EventSource `
+                -EntryType $EntryType -EventId $EventId -Message $Message
+        } catch {
+            Write-Warning "Failed to write event log: $_"
+        }
+    }
+}
+
+# --- Main logic ---
+Write-CleanupLog "Starting WinRM session cleanup (max age: ${MaxAgeMinutes}m, dry run: $DryRun)"
+
+$shells = @()
+try {
+    $shells = @(Get-WSManInstance -ResourceURI shell -Enumerate -ErrorAction Stop)
+} catch {
+    Write-CleanupLog "Failed to enumerate WinRM shells: $_" -EntryType Error -EventId 1001
+    exit 1
+}
+
+$totalShells = $shells.Count
+$staleCount = 0
+$terminatedCount = 0
+$failedCount = 0
+
+foreach ($shell in $shells) {
+    try {
+        $runtime = [System.Xml.XmlConvert]::ToTimeSpan($shell.ShellRunTime)
+    } catch {
+        Write-CleanupLog "Could not parse ShellRunTime for shell $($shell.ShellId): $_" -EntryType Warning -EventId 1002
+        continue
+    }
+
+    if ($runtime.TotalMinutes -gt $MaxAgeMinutes) {
+        $staleCount++
+        $detail = "Shell $($shell.ShellId) | Owner: $($shell.Owner) | Age: $([math]::Round($runtime.TotalMinutes,1))m"
+
+        if ($DryRun) {
+            Write-CleanupLog "[DRY RUN] Would terminate: $detail"
+        } else {
+            try {
+                Remove-WSManInstance -ResourceURI shell -SelectorSet @{ ShellId = $shell.ShellId }
+                $terminatedCount++
+                Write-CleanupLog "Terminated: $detail"
+            } catch {
+                $failedCount++
+                Write-CleanupLog "FAILED to terminate: $detail - $_" -EntryType Error -EventId 1003
+            }
+        }
+    }
+}
+
+# --- Summary ---
+$summary = @"
+=== WinRM Cleanup Summary ===
+Total shells enumerated : $totalShells
+Stale sessions found    : $staleCount
+Sessions terminated     : $terminatedCount
+Termination failures    : $failedCount
+Dry run                 : $DryRun
+"@
+
+Write-CleanupLog $summary
+if ($failedCount -gt 0) {
+    exit 2
+}

@@ -1,0 +1,14 @@
+---
+driver:
+  name: default
+
+platforms:
+  - name: vmnode852
+    managed: false
+    connection: winrm
+
+provisioner:
+  name: ansible
+
+verifier:
+  name: ansible

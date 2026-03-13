@@ -1,0 +1,7 @@
+---
+- name: Restart WinRM cleanup scheduled task
+  community.windows.win_scheduled_task:
+    name: WinRM Session Cleanup
+    state: present
+    enabled: true
+  listen: Restart WinRM cleanup scheduled task

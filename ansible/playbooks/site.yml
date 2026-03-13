@@ -1,0 +1,49 @@
+---
+# Master playbook - deploys all roles in dependency order.
+# Safe to run repeatedly (idempotent). Always uses serial: 1 for WinRM safety.
+#
+# Usage:
+#   just deploy              # Full deployment
+#   just deploy-check        # Dry run
+#   just deploy-quotas       # Only WinRM quota configuration
+#   just deploy-cleanup      # Only session cleanup
+#   just deploy-iis          # Only IIS site + firewall
+#   just deploy-monitoring   # Only WinRM monitoring/observability
+
+- name: "Phase 1: Configure WinRM quotas (admin toggle)"
+  hosts: demo_servers
+  serial: 1
+  gather_facts: true
+  tags: [winrm-quota, admin-toggle, phase-1]
+  roles:
+    - role: winrm_quota_config
+      when: deploy_winrm_quota | default(true)
+
+- name: "Phase 2: Deploy WinRM session cleanup"
+  hosts: demo_servers
+  serial: 1
+  gather_facts: false
+  tags: [winrm-cleanup, session-monitor, phase-2]
+  roles:
+    - role: winrm_session_cleanup
+      when: deploy_winrm_cleanup | default(true)
+
+- name: "Phase 2b: Deploy WinRM monitoring and observability"
+  hosts: demo_servers
+  serial: 1
+  gather_facts: false
+  tags: [winrm-monitoring, observability, phase-2]
+  roles:
+    - role: winrm_monitoring
+      when: deploy_winrm_monitoring | default(true)
+
+- name: "Phase 3: Configure firewall and deploy IIS site"
+  hosts: demo_servers
+  serial: 1
+  gather_facts: false
+  tags: [iis-site, firewall, demo-payload, phase-3]
+  roles:
+    - role: firewall_rules
+      when: deploy_firewall | default(true)
+    - role: iis_site
+      when: deploy_iis_site | default(true)

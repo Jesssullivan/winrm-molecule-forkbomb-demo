@@ -1,0 +1,21 @@
+---
+- name: Verify firewall rules
+  hosts: all
+  serial: 1
+  tasks:
+    - name: Query firewall rules matching Forkbomb
+      ansible.windows.win_shell: |
+        Get-NetFirewallRule -DisplayName '*Forkbomb*' |
+          Select-Object DisplayName, Enabled, Direction
+      register: firewall_query
+
+    - name: Display firewall rule status
+      ansible.builtin.debug:
+        var: firewall_query.stdout_lines
+
+    - name: Assert Forkbomb firewall rule exists
+      ansible.builtin.assert:
+        that:
+          - firewall_query.stdout is search('Forkbomb')
+        fail_msg: "Forkbomb Demo firewall rule not found"
+        success_msg: "Forkbomb Demo firewall rule is present"

@@ -1,0 +1,19 @@
+---
+profile: production
+
+skip_list:
+  - yaml[line-length]
+  - name[missing]
+  - role-name
+
+warn_list:
+  - experimental
+
+offline: false
+
+kinds:
+  - playbook: "ansible/playbooks/*.yml"
+  - tasks: "ansible/roles/*/tasks/*.yml"
+  - vars: "ansible/roles/*/defaults/*.yml"
+  - meta: "ansible/roles/*/meta/*.yml"
+  - handlers: "ansible/roles/*/handlers/*.yml"

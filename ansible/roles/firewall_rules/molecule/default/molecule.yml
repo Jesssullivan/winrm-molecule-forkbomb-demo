@@ -1,0 +1,16 @@
+---
+driver:
+  name: default
+
+platforms:
+  - name: vmnode852
+    managed: false
+
+provisioner:
+  name: ansible
+  inventory:
+    links:
+      hosts: ../../../../inventory/hosts.yml
+      group_vars: ../../../../inventory/group_vars/
+  env:
+    OBJC_DISABLE_INITIALIZE_FORK_SAFETY: "YES"

@@ -1,0 +1,21 @@
+---
+# Install required IIS Windows features.
+
+- name: Ensure IIS features are installed
+  ansible.windows.win_feature:
+    name:
+      - Web-Server
+      - Web-Common-Http
+      - Web-Default-Doc
+      - Web-Static-Content
+      - Web-Mgmt-Tools
+      - Web-Mgmt-Console
+    state: present
+    include_sub_features: true
+    include_management_tools: true
+  register: iis_feature_result
+
+- name: Reboot if IIS feature installation requires it
+  ansible.windows.win_reboot:
+    reboot_timeout: 300
+  when: iis_feature_result.reboot_required

@@ -1,0 +1,48 @@
+---
+# Live WinRM connection monitoring playbook.
+# Run this in a separate terminal while benchmarks execute.
+#
+# Usage:
+#   just monitor
+#   # Or with custom settings:
+#   ansible-playbook playbooks/monitor-connections.yml \
+#     -e monitor_interval=5 -e monitor_iterations=60
+
+- name: "Monitor WinRM connections"
+  hosts: demo_servers
+  serial: 1
+  gather_facts: false
+
+  vars:
+    monitor_iterations: 20
+    monitor_interval: 3
+
+  tasks:
+    - name: "Monitor round {{ item }}: capture WinRM state"
+      ansible.windows.win_shell: |
+        $shells = @(Get-WSManInstance -ResourceURI shell -Enumerate -ErrorAction SilentlyContinue)
+        $procs = @(Get-Process wsmprovhost -ErrorAction SilentlyContinue)
+        $totalCpu = ($procs | Measure-Object -Property CPU -Sum).Sum
+        $totalMem = [math]::Round(($procs | Measure-Object -Property WorkingSet64 -Sum).Sum / 1MB, 1)
+
+        @{
+          timestamp      = (Get-Date -Format 'HH:mm:ss')
+          active_shells  = $shells.Count
+          wsmprovhost    = $procs.Count
+          total_cpu_sec  = [math]::Round($totalCpu, 1)
+          total_mem_mb   = $totalMem
+        } | ConvertTo-Json -Compress
+      register: monitor_result
+      changed_when: false
+      loop: "{{ range(1, (monitor_iterations | int) + 1) | list }}"
+      loop_control:
+        label: "[{{ item }}/{{ monitor_iterations }}]"
+        pause: "{{ monitor_interval }}"
+
+    - name: "Display monitoring summary"
+      ansible.builtin.debug:
+        msg: |
+          ── WinRM Connection Monitor Summary ──
+          {% for r in monitor_result.results %}
+          {{ r.stdout }}
+          {% endfor %}

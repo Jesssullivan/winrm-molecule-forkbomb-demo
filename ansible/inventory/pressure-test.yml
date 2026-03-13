@@ -1,0 +1,73 @@
+---
+# Pressure test inventory: multiple "hosts" pointing at same machine.
+# Each entry creates a separate Ansible fork with its own WinRM connection.
+# With forks=50 and 50 entries, all 50 connect simultaneously.
+#
+# WARNING: This WILL exhaust WinRM quotas and may trigger AD lockout.
+# Only use with `just benchmark-pressure` after coordinating with N&I.
+all:
+  children:
+    pressure_targets:
+      hosts:
+        # 50 entries all pointing at vmnode852 via tunnel
+        pressure-01: {}
+        pressure-02: {}
+        pressure-03: {}
+        pressure-04: {}
+        pressure-05: {}
+        pressure-06: {}
+        pressure-07: {}
+        pressure-08: {}
+        pressure-09: {}
+        pressure-10: {}
+        pressure-11: {}
+        pressure-12: {}
+        pressure-13: {}
+        pressure-14: {}
+        pressure-15: {}
+        pressure-16: {}
+        pressure-17: {}
+        pressure-18: {}
+        pressure-19: {}
+        pressure-20: {}
+        pressure-21: {}
+        pressure-22: {}
+        pressure-23: {}
+        pressure-24: {}
+        pressure-25: {}
+        pressure-26: {}
+        pressure-27: {}
+        pressure-28: {}
+        pressure-29: {}
+        pressure-30: {}
+        pressure-31: {}
+        pressure-32: {}
+        pressure-33: {}
+        pressure-34: {}
+        pressure-35: {}
+        pressure-36: {}
+        pressure-37: {}
+        pressure-38: {}
+        pressure-39: {}
+        pressure-40: {}
+        pressure-41: {}
+        pressure-42: {}
+        pressure-43: {}
+        pressure-44: {}
+        pressure-45: {}
+        pressure-46: {}
+        pressure-47: {}
+        pressure-48: {}
+        pressure-49: {}
+        pressure-50: {}
+      vars:
+        ansible_host: localhost
+        ansible_connection: winrm
+        ansible_port: 15852
+        ansible_winrm_scheme: https
+        ansible_winrm_transport: ntlm
+        ansible_winrm_server_cert_validation: ignore
+        ansible_winrm_operation_timeout_sec: 30
+        ansible_winrm_read_timeout_sec: 60
+        ansible_user: "{{ lookup('community.sops.sops', (inventory_dir ~ '/../../secrets/winrm-creds.enc.yaml') | realpath, extract='[\"username\"]') }}"
+        ansible_password: "{{ lookup('community.sops.sops', (inventory_dir ~ '/../../secrets/winrm-creds.enc.yaml') | realpath, extract='[\"password\"]') }}"

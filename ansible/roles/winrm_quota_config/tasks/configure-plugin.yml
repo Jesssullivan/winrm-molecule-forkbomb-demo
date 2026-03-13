@@ -1,0 +1,57 @@
+---
+# Configure the microsoft.powershell plugin quotas.
+# These are the HIDDEN SECOND LAYER that most documentation misses.
+# Effective WinRM limit = min(Shell quota, Plugin quota).
+# Plugin defaults are often LOWER than Shell defaults.
+
+- name: Set Plugin MaxShells
+  ansible.windows.win_shell: >-
+    $path = 'WSMan:\localhost\Plugin\microsoft.powershell\Quotas\MaxShells';
+    $current = (Get-Item $path).Value;
+    if ($current -ne '{{ winrm_quota_plugin_max_shells }}') {
+      Set-Item $path -Value {{ winrm_quota_plugin_max_shells }};
+      Write-Output 'changed'
+    } else {
+      Write-Output 'ok'
+    }
+  register: _set_plugin_max_shells
+  changed_when: "'changed' in _set_plugin_max_shells.stdout"
+
+- name: Set Plugin MaxShellsPerUser
+  ansible.windows.win_shell: >-
+    $path = 'WSMan:\localhost\Plugin\microsoft.powershell\Quotas\MaxShellsPerUser';
+    $current = (Get-Item $path).Value;
+    if ($current -ne '{{ winrm_quota_plugin_max_shells_per_user }}') {
+      Set-Item $path -Value {{ winrm_quota_plugin_max_shells_per_user }};
+      Write-Output 'changed'
+    } else {
+      Write-Output 'ok'
+    }
+  register: _set_plugin_max_shells_per_user
+  changed_when: "'changed' in _set_plugin_max_shells_per_user.stdout"
+
+- name: Set Plugin MaxConcurrentUsers
+  ansible.windows.win_shell: >-
+    $path = 'WSMan:\localhost\Plugin\microsoft.powershell\Quotas\MaxConcurrentUsers';
+    $current = (Get-Item $path).Value;
+    if ($current -ne '{{ winrm_quota_plugin_max_concurrent_users }}') {
+      Set-Item $path -Value {{ winrm_quota_plugin_max_concurrent_users }};
+      Write-Output 'changed'
+    } else {
+      Write-Output 'ok'
+    }
+  register: _set_plugin_max_concurrent_users
+  changed_when: "'changed' in _set_plugin_max_concurrent_users.stdout"
+
+- name: Set Plugin MaxConcurrentCommandsPerShell
+  ansible.windows.win_shell: >-
+    $path = 'WSMan:\localhost\Plugin\microsoft.powershell\Quotas\MaxConcurrentCommandsPerShell';
+    $current = (Get-Item $path).Value;
+    if ($current -ne '{{ winrm_quota_plugin_max_concurrent_commands_per_shell }}') {
+      Set-Item $path -Value {{ winrm_quota_plugin_max_concurrent_commands_per_shell }};
+      Write-Output 'changed'
+    } else {
+      Write-Output 'ok'
+    }
+  register: _set_plugin_max_concurrent_cmds
+  changed_when: "'changed' in _set_plugin_max_concurrent_cmds.stdout"

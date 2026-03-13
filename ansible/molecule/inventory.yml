@@ -1,0 +1,20 @@
+---
+# Shared molecule inventory for all role scenarios.
+# Each role's molecule.yml links here via provisioner.inventory.links.hosts
+all:
+  hosts:
+    vmnode852:
+      ansible_host: localhost
+      ansible_connection: winrm
+      ansible_port: 15852
+      ansible_winrm_scheme: https
+      ansible_winrm_transport: ntlm
+      ansible_winrm_server_cert_validation: ignore
+      ansible_winrm_operation_timeout_sec: 120
+      ansible_winrm_read_timeout_sec: 180
+      ansible_user: "{{ lookup('community.sops.sops', lookup('env', 'PWD') ~ '/secrets/winrm-creds.enc.yaml', key='username') }}"
+      ansible_password: "{{ lookup('community.sops.sops', lookup('env', 'PWD') ~ '/secrets/winrm-creds.enc.yaml', key='password') }}"
+  children:
+    demo_servers:
+      hosts:
+        vmnode852: {}

@@ -1,0 +1,62 @@
+---
+- name: Verify - assert WinRM quotas are correctly applied
+  hosts: all
+  serial: 1
+  gather_facts: false
+
+  tasks:
+    - name: Read MaxShellsPerUser
+      ansible.windows.win_shell: >-
+        Get-Item WSMan:\localhost\Shell\MaxShellsPerUser |
+        Select-Object -ExpandProperty Value
+      register: _verify_max_shells
+      changed_when: false
+
+    - name: Read MaxConcurrentUsers
+      ansible.windows.win_shell: >-
+        Get-Item WSMan:\localhost\Shell\MaxConcurrentUsers |
+        Select-Object -ExpandProperty Value
+      register: _verify_max_concurrent_users
+      changed_when: false
+
+    - name: Read MaxProcessesPerShell
+      ansible.windows.win_shell: >-
+        Get-Item WSMan:\localhost\Shell\MaxProcessesPerShell |
+        Select-Object -ExpandProperty Value
+      register: _verify_max_processes
+      changed_when: false
+
+    - name: Read IdleTimeout
+      ansible.windows.win_shell: >-
+        Get-Item WSMan:\localhost\Shell\IdleTimeout |
+        Select-Object -ExpandProperty Value
+      register: _verify_idle_timeout
+      changed_when: false
+
+    - name: Read MaxMemoryPerShellMB
+      ansible.windows.win_shell: >-
+        Get-Item WSMan:\localhost\Shell\MaxMemoryPerShellMB |
+        Select-Object -ExpandProperty Value
+      register: _verify_max_memory
+      changed_when: false
+
+    - name: Read MaxConcurrentOperationsPerUser
+      ansible.windows.win_shell: >-
+        Get-Item WSMan:\localhost\Service\MaxConcurrentOperationsPerUser |
+        Select-Object -ExpandProperty Value
+      register: _verify_max_concurrent_ops
+      changed_when: false
+
+    - name: Assert all WinRM quotas match expected values
+      ansible.builtin.assert:
+        that:
+          - _verify_max_shells.stdout | trim == '100'
+          - _verify_max_concurrent_users.stdout | trim == '25'
+          - _verify_max_processes.stdout | trim == '50'
+          - _verify_idle_timeout.stdout | trim == '300000'
+          - _verify_max_memory.stdout | trim == '2048'
+          - _verify_max_concurrent_ops.stdout | trim == '4294967295'
+        fail_msg: >-
+          WinRM quota verification failed. At least one quota value does not
+          match the expected elevated default.
+        success_msg: All WinRM quotas verified successfully.

@@ -1,0 +1,28 @@
+---
+# Entry point for the winrm_quota_config role.
+# Workflow: audit current values -> configure new values -> validate applied values.
+
+- name: Audit current WinRM quota values
+  ansible.builtin.include_tasks: audit.yml
+  tags:
+    - winrm_quota
+    - winrm_quota_audit
+
+- name: Configure WinRM quota values
+  ansible.builtin.include_tasks: configure.yml
+  tags:
+    - winrm_quota
+    - winrm_quota_configure
+
+- name: Configure Plugin-level quota values
+  ansible.builtin.include_tasks: configure-plugin.yml
+  when: winrm_quota_configure_plugin | default(true)
+  tags:
+    - winrm_quota
+    - winrm_quota_plugin
+
+- name: Validate WinRM quota values
+  ansible.builtin.include_tasks: validate.yml
+  tags:
+    - winrm_quota
+    - winrm_quota_validate

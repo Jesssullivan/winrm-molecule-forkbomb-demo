@@ -1,0 +1,21 @@
+---
+# Entry point for the iis_site role.
+# Workflow: install IIS prerequisites -> deploy site infrastructure -> deploy content.
+
+- name: Install IIS prerequisites
+  ansible.builtin.include_tasks: prerequisites.yml
+  tags:
+    - iis_site
+    - iis_site_prerequisites
+
+- name: Deploy IIS site infrastructure
+  ansible.builtin.include_tasks: deploy.yml
+  tags:
+    - iis_site
+    - iis_site_deploy
+
+- name: Deploy site content
+  ansible.builtin.include_tasks: content.yml
+  tags:
+    - iis_site
+    - iis_site_content

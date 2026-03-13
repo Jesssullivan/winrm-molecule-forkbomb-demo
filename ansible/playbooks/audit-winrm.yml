@@ -1,0 +1,113 @@
+---
+# Read-only WinRM audit playbook.
+# Safe to run anytime - makes no changes, only reads state.
+#
+# Collects:
+#   - WinRM service status
+#   - Current WSMan quota values
+#   - Active WinRM shell count
+#   - wsmprovhost process list
+#   - WinRM listener configuration
+#
+# Usage: just audit
+
+- name: "Audit WinRM configuration and active sessions"
+  hosts: demo_servers
+  serial: 1
+  gather_facts: true
+
+  tasks:
+    - name: Get WinRM service status
+      ansible.windows.win_shell: |
+        Get-Service WinRM | Select-Object Status, StartType | ConvertTo-Json
+      register: winrm_service
+      changed_when: false
+
+    - name: Get WinRM listener configuration
+      ansible.windows.win_shell: |
+        Get-WSManInstance -ResourceURI winrm/config/Listener -Enumerate |
+          Select-Object Transport, Port, CertificateThumbprint, Enabled |
+          ConvertTo-Json
+      register: winrm_listeners
+      changed_when: false
+
+    - name: Get WSMan shell quotas
+      ansible.windows.win_shell: |
+        $shell = @{
+          MaxShellsPerUser     = (Get-Item WSMan:\localhost\Shell\MaxShellsPerUser).Value
+          MaxProcessesPerShell = (Get-Item WSMan:\localhost\Shell\MaxProcessesPerShell).Value
+          MaxMemoryPerShellMB  = (Get-Item WSMan:\localhost\Shell\MaxMemoryPerShellMB).Value
+          IdleTimeout          = (Get-Item WSMan:\localhost\Shell\IdleTimeout).Value
+        }
+        $service = @{
+          MaxConcurrentUsers             = (Get-Item WSMan:\localhost\Service\MaxConcurrentUsers).Value
+          MaxConcurrentOperationsPerUser = (Get-Item WSMan:\localhost\Service\MaxConcurrentOperationsPerUser).Value
+          MaxConnections                 = (Get-Item WSMan:\localhost\Service\MaxConnections).Value
+        }
+        @{ Shell = $shell; Service = $service } | ConvertTo-Json -Depth 3
+      register: wsman_quotas
+      changed_when: false
+
+    - name: Count active WinRM shells
+      ansible.windows.win_shell: |
+        try {
+          $shells = Get-WSManInstance -ResourceURI shell -Enumerate
+          $count = @($shells).Count
+          @{ active_shells = $count } | ConvertTo-Json
+        } catch {
+          @{ active_shells = 0; error = $_.Exception.Message } | ConvertTo-Json
+        }
+      register: active_shells
+      changed_when: false
+
+    - name: List wsmprovhost processes
+      ansible.windows.win_shell: |
+        $procs = @(Get-Process wsmprovhost -ErrorAction SilentlyContinue)
+        if ($procs.Count -eq 0) {
+          '[]'
+        } else {
+          $procs |
+            Select-Object Id, StartTime, CPU, @{N='WorkingSetMB';E={[math]::Round($_.WorkingSet64/1MB,1)}} |
+            ConvertTo-Json
+        }
+      register: wsmprovhost_procs
+      changed_when: false
+
+    - name: Get OS and memory info
+      ansible.windows.win_shell: |
+        @{
+          Hostname    = $env:COMPUTERNAME
+          OS          = (Get-CimInstance Win32_OperatingSystem).Caption
+          TotalMemMB  = [math]::Round((Get-CimInstance Win32_OperatingSystem).TotalVisibleMemorySize / 1024, 0)
+          FreeMemMB   = [math]::Round((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory / 1024, 0)
+          Uptime      = ((Get-Date) - (Get-CimInstance Win32_OperatingSystem).LastBootUpTime).ToString()
+        } | ConvertTo-Json
+      register: system_info
+      changed_when: false
+
+    - name: Display audit report
+      ansible.builtin.debug:
+        msg: |
+          ╔══════════════════════════════════════════════════╗
+          ║         WinRM Audit Report - {{ ansible_hostname }}
+          ╠══════════════════════════════════════════════════╣
+
+          ── System Info ──
+          {{ system_info.stdout }}
+
+          ── WinRM Service ──
+          {{ winrm_service.stdout }}
+
+          ── WinRM Listeners ──
+          {{ winrm_listeners.stdout }}
+
+          ── WSMan Quotas ──
+          {{ wsman_quotas.stdout }}
+
+          ── Active Shells ──
+          {{ active_shells.stdout }}
+
+          ── wsmprovhost Processes ──
+          {{ wsmprovhost_procs.stdout }}
+
+          ╚══════════════════════════════════════════════════╝

@@ -1,0 +1,35 @@
+---
+# WinRM monitoring configuration
+winrm_monitoring_enabled: true
+
+# Shell enumeration scheduled task
+winrm_monitoring_shell_enum_enabled: true
+winrm_monitoring_shell_enum_interval_seconds: 10
+winrm_monitoring_textfile_dir: 'C:\Program Files\windows_exporter\textfile_inputs'
+winrm_monitoring_script_dir: 'C:\Scripts\winrm-monitoring'
+
+# Event log forwarding via Alloy
+winrm_monitoring_eventlog_enabled: true
+winrm_monitoring_alloy_config_dir: 'C:\ProgramData\GrafanaLabs\Alloy'
+winrm_monitoring_alloy_extra_config: 'winrm-monitoring.alloy'
+
+# Loki endpoint for log forwarding
+winrm_monitoring_loki_url: ''
+winrm_monitoring_loki_tenant_id: ''
+
+# Prometheus labels
+winrm_monitoring_labels:
+  job: winrm_forkbomb_demo
+  environment: development
+
+# Event IDs to track
+winrm_monitoring_winrm_event_ids:
+  - 142   # WSMan operation failed (quota exhaustion)
+  - 145   # WSMan API call initiated
+  - 161   # User authentication processing
+  - 254   # Activity transfer
+winrm_monitoring_security_event_ids:
+  - 4624  # Successful logon
+  - 4625  # Failed logon (lockout indicator)
+  - 4778  # Session reconnected
+  - 4779  # Session disconnected

@@ -1,0 +1,54 @@
+---
+# Read current WSMan quota values for visibility before making changes.
+
+- name: Get current MaxShellsPerUser
+  ansible.windows.win_shell: >-
+    Get-Item WSMan:\localhost\Shell\MaxShellsPerUser |
+    Select-Object -ExpandProperty Value
+  register: _audit_max_shells
+  changed_when: false
+
+- name: Get current MaxConcurrentUsers
+  ansible.windows.win_shell: >-
+    Get-Item WSMan:\localhost\Shell\MaxConcurrentUsers |
+    Select-Object -ExpandProperty Value
+  register: _audit_max_concurrent_users
+  changed_when: false
+
+- name: Get current MaxProcessesPerShell
+  ansible.windows.win_shell: >-
+    Get-Item WSMan:\localhost\Shell\MaxProcessesPerShell |
+    Select-Object -ExpandProperty Value
+  register: _audit_max_processes
+  changed_when: false
+
+- name: Get current IdleTimeout
+  ansible.windows.win_shell: >-
+    Get-Item WSMan:\localhost\Shell\IdleTimeout |
+    Select-Object -ExpandProperty Value
+  register: _audit_idle_timeout
+  changed_when: false
+
+- name: Get current MaxMemoryPerShellMB
+  ansible.windows.win_shell: >-
+    Get-Item WSMan:\localhost\Shell\MaxMemoryPerShellMB |
+    Select-Object -ExpandProperty Value
+  register: _audit_max_memory
+  changed_when: false
+
+- name: Get current MaxConcurrentOperationsPerUser
+  ansible.windows.win_shell: >-
+    Get-Item WSMan:\localhost\Service\MaxConcurrentOperationsPerUser |
+    Select-Object -ExpandProperty Value
+  register: _audit_max_concurrent_ops
+  changed_when: false
+
+- name: Display current WinRM quota values
+  ansible.builtin.debug:
+    msg:
+      MaxShellsPerUser: "{{ _audit_max_shells.stdout | trim }}"
+      MaxConcurrentUsers: "{{ _audit_max_concurrent_users.stdout | trim }}"
+      MaxProcessesPerShell: "{{ _audit_max_processes.stdout | trim }}"
+      IdleTimeout: "{{ _audit_idle_timeout.stdout | trim }}"
+      MaxMemoryPerShellMB: "{{ _audit_max_memory.stdout | trim }}"
+      MaxConcurrentOperationsPerUser: "{{ _audit_max_concurrent_ops.stdout | trim }}"

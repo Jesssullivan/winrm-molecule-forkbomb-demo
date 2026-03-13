@@ -1,0 +1,22 @@
+---
+galaxy_info:
+  role_name: winrm_quota_config
+  author: jsullivan2
+  description: Configure WinRM shell quotas on Windows targets to prevent quota exhaustion during parallel Ansible runs.
+  license: MIT
+  min_ansible_version: "2.14"
+
+  platforms:
+    - name: Windows
+      versions:
+        - "2019"
+        - "2022"
+
+  galaxy_tags:
+    - winrm
+    - windows
+    - wsman
+    - quota
+    - ansible
+
+dependencies: []

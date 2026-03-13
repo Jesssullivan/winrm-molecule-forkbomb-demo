@@ -1,0 +1,58 @@
+---
+# Re-read quotas after configuration and assert they match desired values.
+
+- name: Read MaxShellsPerUser for validation
+  ansible.windows.win_shell: >-
+    Get-Item WSMan:\localhost\Shell\MaxShellsPerUser |
+    Select-Object -ExpandProperty Value
+  register: _validate_max_shells
+  changed_when: false
+
+- name: Read MaxConcurrentUsers for validation
+  ansible.windows.win_shell: >-
+    Get-Item WSMan:\localhost\Shell\MaxConcurrentUsers |
+    Select-Object -ExpandProperty Value
+  register: _validate_max_concurrent_users
+  changed_when: false
+
+- name: Read MaxProcessesPerShell for validation
+  ansible.windows.win_shell: >-
+    Get-Item WSMan:\localhost\Shell\MaxProcessesPerShell |
+    Select-Object -ExpandProperty Value
+  register: _validate_max_processes
+  changed_when: false
+
+- name: Read IdleTimeout for validation
+  ansible.windows.win_shell: >-
+    Get-Item WSMan:\localhost\Shell\IdleTimeout |
+    Select-Object -ExpandProperty Value
+  register: _validate_idle_timeout
+  changed_when: false
+
+- name: Read MaxMemoryPerShellMB for validation
+  ansible.windows.win_shell: >-
+    Get-Item WSMan:\localhost\Shell\MaxMemoryPerShellMB |
+    Select-Object -ExpandProperty Value
+  register: _validate_max_memory
+  changed_when: false
+
+- name: Read MaxConcurrentOperationsPerUser for validation
+  ansible.windows.win_shell: >-
+    Get-Item WSMan:\localhost\Service\MaxConcurrentOperationsPerUser |
+    Select-Object -ExpandProperty Value
+  register: _validate_max_concurrent_ops
+  changed_when: false
+
+- name: Assert all WinRM quotas match desired values
+  ansible.builtin.assert:
+    that:
+      - _validate_max_shells.stdout | trim | int == winrm_quota_max_shells_per_user | int
+      - _validate_max_concurrent_users.stdout | trim | int == winrm_quota_max_concurrent_users | int
+      - _validate_max_processes.stdout | trim | int == winrm_quota_max_processes_per_shell | int
+      - _validate_idle_timeout.stdout | trim | int == winrm_quota_idle_timeout_ms | int
+      - _validate_max_memory.stdout | trim | int == winrm_quota_max_memory_per_shell_mb | int
+      - _validate_max_concurrent_ops.stdout | trim | int == winrm_quota_max_concurrent_ops_per_user | int
+    fail_msg: >-
+      WinRM quota validation failed. One or more values do not match the
+      desired configuration. Re-run with -vv to inspect registered values.
+    success_msg: All WinRM quotas are correctly configured.

@@ -1,0 +1,5 @@
+---
+# WinRM credentials resolved from SOPS-encrypted file
+# Uses an absolute path derived from this file's location to avoid PWD issues
+ansible_user: "{{ lookup('community.sops.sops', (inventory_dir ~ '/../../secrets/winrm-creds.enc.yaml') | realpath, extract='[\"username\"]') }}"
+ansible_password: "{{ lookup('community.sops.sops', (inventory_dir ~ '/../../secrets/winrm-creds.enc.yaml') | realpath, extract='[\"password\"]') }}"
