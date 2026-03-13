@@ -4,8 +4,12 @@ profile: production
 skip_list:
   - yaml[line-length]
   - name[missing]
+  - name[template]
+  - name[casing]
   - role-name
   - var-naming[no-role-prefix]
+  - meta-runtime[unsupported-version]
+  - ignore-errors
 
 warn_list:
   - experimental

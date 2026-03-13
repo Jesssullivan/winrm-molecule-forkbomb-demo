@@ -21,6 +21,8 @@ jobs:
         run: yamllint -c .yamllint ansible/
       - name: Ansible lint
         run: ansible-lint ansible/playbooks/ ansible/roles/
+        env:
+          ANSIBLE_ROLES_PATH: ansible/roles
       - name: Pytest (structure)
         run: pytest tests/test_structure.py -v -m structure
 
