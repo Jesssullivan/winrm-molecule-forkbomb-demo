@@ -1,0 +1,70 @@
+---
+- name: Identify and terminate stale WinRM sessions
+  ansible.windows.win_powershell:
+    script: |
+      $MaxAgeMinutes = {{ winrm_cleanup_max_age_minutes }}
+      $DryRun = ${{ winrm_cleanup_dry_run | string | lower }}
+
+      $shells = Get-WSManInstance -ResourceURI shell -Enumerate
+      $staleCount = 0
+      $terminatedCount = 0
+      $errors = @()
+
+      foreach ($shell in $shells) {
+          $runtime = [System.Xml.XmlConvert]::ToTimeSpan($shell.ShellRunTime)
+          if ($runtime.TotalMinutes -gt $MaxAgeMinutes) {
+              $staleCount++
+              if (-not $DryRun) {
+                  try {
+                      Remove-WSManInstance -ResourceURI shell -SelectorSet @{ ShellId = $shell.ShellId }
+                      $terminatedCount++
+                  } catch {
+                      $errors += "Failed to terminate shell $($shell.ShellId): $_"
+                  }
+              }
+          }
+      }
+
+      [PSCustomObject]@{
+          StaleCount      = $staleCount
+          TerminatedCount = $terminatedCount
+          DryRun          = $DryRun
+          Errors          = $errors
+      } | ConvertTo-Json -Depth 3
+  register: winrm_terminate_result
+  changed_when: >-
+    (winrm_terminate_result.output | default(['{}']) | first | from_json).TerminatedCount | default(0) | int > 0
+  when: not winrm_cleanup_dry_run
+
+- name: Identify stale WinRM sessions (dry run)
+  ansible.windows.win_powershell:
+    script: |
+      $MaxAgeMinutes = {{ winrm_cleanup_max_age_minutes }}
+
+      $shells = Get-WSManInstance -ResourceURI shell -Enumerate
+      $staleCount = 0
+
+      foreach ($shell in $shells) {
+          $runtime = [System.Xml.XmlConvert]::ToTimeSpan($shell.ShellRunTime)
+          if ($runtime.TotalMinutes -gt $MaxAgeMinutes) {
+              $staleCount++
+          }
+      }
+
+      [PSCustomObject]@{
+          StaleCount      = $staleCount
+          TerminatedCount = 0
+          DryRun          = $true
+          Errors          = @()
+      } | ConvertTo-Json -Depth 3
+  register: winrm_terminate_result
+  changed_when: false
+  when: winrm_cleanup_dry_run
+
+- name: Report termination results
+  ansible.builtin.debug:
+    msg: |
+      === Session Cleanup Results ===
+      Stale sessions found: {{ (winrm_terminate_result.output | default(['{}']) | first | from_json).StaleCount | default(0) }}
+      Sessions terminated:  {{ (winrm_terminate_result.output | default(['{}']) | first | from_json).TerminatedCount | default(0) }}
+      Dry run:              {{ (winrm_terminate_result.output | default(['{}']) | first | from_json).DryRun | default(false) }}

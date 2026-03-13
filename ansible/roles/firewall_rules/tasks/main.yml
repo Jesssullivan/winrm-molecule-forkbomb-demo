@@ -1,0 +1,29 @@
+---
+# Entry point for the firewall_rules role.
+# Creates inbound Windows Firewall rules for the demo IIS site and WinRM HTTPS.
+
+- name: Create inbound firewall rule for demo IIS site
+  community.windows.win_firewall_rule:
+    name: "WinRM Forkbomb Demo - IIS ({{ firewall_demo_port }})"
+    localport: "{{ firewall_demo_port }}"
+    direction: in
+    action: allow
+    protocol: tcp
+    profiles: "{{ firewall_rule_profiles }}"
+    enabled: "{{ firewall_rules_enabled }}"
+  tags:
+    - firewall
+    - firewall_iis
+
+- name: Ensure WinRM HTTPS firewall rule exists
+  community.windows.win_firewall_rule:
+    name: "WinRM HTTPS ({{ firewall_winrm_https_port }})"
+    localport: "{{ firewall_winrm_https_port }}"
+    direction: in
+    action: allow
+    protocol: tcp
+    profiles: "{{ firewall_rule_profiles }}"
+    enabled: "{{ firewall_rules_enabled }}"
+  tags:
+    - firewall
+    - firewall_winrm

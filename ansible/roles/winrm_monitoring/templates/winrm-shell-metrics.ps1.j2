@@ -1,0 +1,140 @@
+#Requires -Version 5.1
+<#
+.SYNOPSIS
+    Collects WinRM shell and wsmprovhost metrics for Prometheus textfile collector.
+.DESCRIPTION
+    Enumerates active WinRM shells, counts wsmprovhost processes, gathers quota
+    configuration, and writes metrics in Prometheus exposition format.
+    Deployed by the winrm_monitoring Ansible role (winrm-molecule-forkbomb-demo).
+#>
+
+$ErrorActionPreference = 'Continue'
+
+$TextfileDir = '{{ winrm_monitoring_textfile_dir }}'
+$OutputFile = Join-Path $TextfileDir 'winrm_shells.prom'
+$TmpFile = Join-Path $TextfileDir 'winrm_shells.prom.tmp'
+$ErrorCountFile = Join-Path $TextfileDir 'winrm_shells_errors.count'
+
+# Load persistent error counter
+$errorTotal = 0
+if (Test-Path $ErrorCountFile) {
+    try {
+        $errorTotal = [int](Get-Content $ErrorCountFile -Raw).Trim()
+    } catch {
+        $errorTotal = 0
+    }
+}
+
+try {
+    # --- Enumerate active WinRM shells ---
+    $activeShells = @()
+    try {
+        $activeShells = @(Get-WSManInstance -ResourceURI shell -Enumerate -ErrorAction Stop)
+    } catch {
+        $errorTotal++
+        Write-EventLog -LogName Application -Source 'WinRM-Metrics' `
+            -EventId 1001 -EntryType Error `
+            -Message "Failed to enumerate WinRM shells: $_" `
+            -ErrorAction SilentlyContinue
+    }
+    $shellCount = $activeShells.Count
+
+    # --- Per-user shell breakdown ---
+    $perUserShells = @{}
+    foreach ($shell in $activeShells) {
+        $owner = $shell.Owner
+        if (-not $owner) { $owner = 'unknown' }
+        if ($perUserShells.ContainsKey($owner)) {
+            $perUserShells[$owner]++
+        } else {
+            $perUserShells[$owner] = 1
+        }
+    }
+
+    # --- Count wsmprovhost processes ---
+    $wsmprovhostProcs = @()
+    try {
+        $wsmprovhostProcs = @(Get-Process -Name wsmprovhost -ErrorAction SilentlyContinue)
+    } catch {
+        # No wsmprovhost processes running is normal
+    }
+    $procCount = $wsmprovhostProcs.Count
+    $memoryBytes = 0
+    foreach ($proc in $wsmprovhostProcs) {
+        $memoryBytes += $proc.WorkingSet64
+    }
+
+    # --- Get WinRM quota values ---
+    $maxShellsPerUser = 0
+    $maxConcurrentUsers = 0
+    try {
+        $winrsConfig = Get-WSManInstance -ResourceURI winrm/config/winrs -ErrorAction Stop
+        $maxShellsPerUser = [int]$winrsConfig.MaxShellsPerUser
+        $maxConcurrentUsers = [int]$winrsConfig.MaxConcurrentUsers
+    } catch {
+        $errorTotal++
+        Write-EventLog -LogName Application -Source 'WinRM-Metrics' `
+            -EventId 1002 -EntryType Error `
+            -Message "Failed to read WinRM quota config: $_" `
+            -ErrorAction SilentlyContinue
+    }
+
+    # --- Build Prometheus textfile output ---
+    $lines = [System.Collections.Generic.List[string]]::new()
+
+    $lines.Add('# HELP winrm_active_shells Current number of active WinRM shells')
+    $lines.Add('# TYPE winrm_active_shells gauge')
+    $lines.Add("winrm_active_shells $shellCount")
+
+    $lines.Add('# HELP winrm_active_shells_per_user Current number of active WinRM shells per user')
+    $lines.Add('# TYPE winrm_active_shells_per_user gauge')
+    foreach ($entry in $perUserShells.GetEnumerator()) {
+        $user = $entry.Key -replace '\\', '\\\\'
+        $user = $user -replace '"', '\"'
+        $lines.Add("winrm_active_shells_per_user{user=`"$user`"} $($entry.Value)")
+    }
+
+    $lines.Add('# HELP winrm_wsmprovhost_processes Current number of wsmprovhost.exe processes')
+    $lines.Add('# TYPE winrm_wsmprovhost_processes gauge')
+    $lines.Add("winrm_wsmprovhost_processes $procCount")
+
+    $lines.Add('# HELP winrm_wsmprovhost_memory_bytes Total memory used by wsmprovhost processes')
+    $lines.Add('# TYPE winrm_wsmprovhost_memory_bytes gauge')
+    $lines.Add("winrm_wsmprovhost_memory_bytes $memoryBytes")
+
+    $lines.Add('# HELP winrm_quota_max_shells_per_user Configured MaxShellsPerUser quota')
+    $lines.Add('# TYPE winrm_quota_max_shells_per_user gauge')
+    $lines.Add("winrm_quota_max_shells_per_user $maxShellsPerUser")
+
+    $lines.Add('# HELP winrm_quota_max_concurrent_users Configured MaxConcurrentUsers quota')
+    $lines.Add('# TYPE winrm_quota_max_concurrent_users gauge')
+    $lines.Add("winrm_quota_max_concurrent_users $maxConcurrentUsers")
+
+    $lines.Add('# HELP winrm_shell_enumeration_errors_total Total enumeration errors')
+    $lines.Add('# TYPE winrm_shell_enumeration_errors_total counter')
+    $lines.Add("winrm_shell_enumeration_errors_total $errorTotal")
+
+    # --- Atomic write: write to .tmp then rename ---
+    $content = ($lines -join "`n") + "`n"
+    [System.IO.File]::WriteAllText($TmpFile, $content, [System.Text.Encoding]::UTF8)
+
+    if (Test-Path $OutputFile) {
+        Remove-Item $OutputFile -Force
+    }
+    Rename-Item -Path $TmpFile -NewName (Split-Path $OutputFile -Leaf) -Force
+
+    # Persist error counter
+    [System.IO.File]::WriteAllText($ErrorCountFile, $errorTotal.ToString(), [System.Text.Encoding]::UTF8)
+
+} catch {
+    $errorTotal++
+    # Persist error counter even on failure
+    try {
+        [System.IO.File]::WriteAllText($ErrorCountFile, $errorTotal.ToString(), [System.Text.Encoding]::UTF8)
+    } catch {}
+
+    Write-EventLog -LogName Application -Source 'WinRM-Metrics' `
+        -EventId 1000 -EntryType Error `
+        -Message "WinRM shell metrics collection failed: $_" `
+        -ErrorAction SilentlyContinue
+}

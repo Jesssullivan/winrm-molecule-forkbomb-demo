@@ -1,0 +1,44 @@
+---
+- name: Ensure Scripts directory exists
+  ansible.windows.win_file:
+    path: C:\Scripts
+    state: directory
+  when: winrm_cleanup_install_scheduled_task
+
+- name: Deploy WinRM session cleanup script
+  ansible.windows.win_template:
+    src: cleanup-winrm-sessions.ps1.j2
+    dest: "{{ winrm_cleanup_script_path }}"
+  when: winrm_cleanup_install_scheduled_task
+  notify: Restart WinRM cleanup scheduled task
+
+- name: Create WinRM session cleanup scheduled task
+  community.windows.win_scheduled_task:
+    name: WinRM Session Cleanup
+    description: >-
+      Automatically terminates stale WinRM sessions older than
+      {{ winrm_cleanup_max_age_minutes }} minutes to prevent quota exhaustion.
+    state: present
+    enabled: true
+    triggers:
+      - type: registration
+        repetition:
+          interval: "PT{{ winrm_cleanup_schedule_interval_minutes }}M"
+          stop_at_duration_end: false
+    actions:
+      - path: powershell.exe
+        arguments: >-
+          -NoProfile -NonInteractive -ExecutionPolicy Bypass
+          -File "{{ winrm_cleanup_script_path }}"
+    principal:
+      user_id: SYSTEM
+      logon_type: service_account
+      run_level: highest
+    settings:
+      allow_demand_start: true
+      stop_if_going_on_batteries: false
+      disallow_start_if_on_batteries: false
+      execution_time_limit: PT10M
+      restart_count: 3
+      restart_interval: PT1M
+  when: winrm_cleanup_install_scheduled_task

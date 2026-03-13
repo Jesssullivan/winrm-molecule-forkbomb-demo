@@ -1,0 +1,24 @@
+---
+# Deploy the SPA files to the IIS site physical path.
+
+- name: Deploy index.html from template
+  ansible.windows.win_template:
+    src: index.html.j2
+    dest: "{{ iis_site_physical_path }}\\index.html"
+  notify: restart iis
+
+- name: Deploy web.config from template
+  ansible.windows.win_template:
+    src: web.config.j2
+    dest: "{{ iis_site_physical_path }}\\web.config"
+  notify: restart iis
+
+- name: Copy style.css to site
+  ansible.windows.win_copy:
+    src: style.css
+    dest: "{{ iis_site_physical_path }}\\style.css"
+
+- name: Copy app.js to site
+  ansible.windows.win_copy:
+    src: app.js
+    dest: "{{ iis_site_physical_path }}\\app.js"

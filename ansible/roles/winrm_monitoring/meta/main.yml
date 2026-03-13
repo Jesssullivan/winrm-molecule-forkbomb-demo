@@ -1,0 +1,22 @@
+---
+galaxy_info:
+  role_name: winrm_monitoring
+  author: your-username
+  description: >-
+    WinRM observability for the forkbomb demo. Deploys a scheduled PowerShell
+    metrics collector (Prometheus textfile format) and Grafana Alloy event log
+    forwarding for WinRM operational and security events.
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Windows
+      versions:
+        - all
+  galaxy_tags:
+    - winrm
+    - monitoring
+    - windows
+    - prometheus
+    - grafana
+
+dependencies: []

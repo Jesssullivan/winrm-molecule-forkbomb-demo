@@ -1,0 +1,14 @@
+---
+driver:
+  name: default
+
+platforms:
+  - name: win-target
+    managed: false
+    connection: winrm
+
+provisioner:
+  name: ansible
+
+verifier:
+  name: ansible

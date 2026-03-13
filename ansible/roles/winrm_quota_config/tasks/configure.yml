@@ -1,0 +1,93 @@
+---
+# Set WSMan quota values. Each task compares the current value to the desired
+# value and only reports changed when an actual modification occurs.
+
+- name: Set MaxShellsPerUser
+  ansible.windows.win_shell: >-
+    $current = (Get-Item WSMan:\localhost\Shell\MaxShellsPerUser).Value;
+    if ($current -ne '{{ winrm_quota_max_shells_per_user }}') {
+      Set-Item WSMan:\localhost\Shell\MaxShellsPerUser -Value {{ winrm_quota_max_shells_per_user }};
+      Write-Output 'changed'
+    } else {
+      Write-Output 'ok'
+    }
+  register: _set_max_shells
+  changed_when: "'changed' in _set_max_shells.stdout"
+  # NOTE: WSMan quotas take effect immediately on new shell creation.
+  # Do NOT restart WinRM — it kills the management connection and is
+  # often unrecoverable over WinRM. See finding-winrm-restart-20260313.md.
+
+- name: Set MaxConcurrentUsers
+  ansible.windows.win_shell: >-
+    $current = (Get-Item WSMan:\localhost\Shell\MaxConcurrentUsers).Value;
+    if ($current -ne '{{ winrm_quota_max_concurrent_users }}') {
+      Set-Item WSMan:\localhost\Shell\MaxConcurrentUsers -Value {{ winrm_quota_max_concurrent_users }};
+      Write-Output 'changed'
+    } else {
+      Write-Output 'ok'
+    }
+  register: _set_max_concurrent_users
+  changed_when: "'changed' in _set_max_concurrent_users.stdout"
+  # NOTE: WSMan quotas take effect immediately on new shell creation.
+  # Do NOT restart WinRM — it kills the management connection and is
+  # often unrecoverable over WinRM. See finding-winrm-restart-20260313.md.
+
+- name: Set MaxProcessesPerShell
+  ansible.windows.win_shell: >-
+    $current = (Get-Item WSMan:\localhost\Shell\MaxProcessesPerShell).Value;
+    if ($current -ne '{{ winrm_quota_max_processes_per_shell }}') {
+      Set-Item WSMan:\localhost\Shell\MaxProcessesPerShell -Value {{ winrm_quota_max_processes_per_shell }};
+      Write-Output 'changed'
+    } else {
+      Write-Output 'ok'
+    }
+  register: _set_max_processes
+  changed_when: "'changed' in _set_max_processes.stdout"
+  # NOTE: WSMan quotas take effect immediately on new shell creation.
+  # Do NOT restart WinRM — it kills the management connection and is
+  # often unrecoverable over WinRM. See finding-winrm-restart-20260313.md.
+
+- name: Set IdleTimeout
+  ansible.windows.win_shell: >-
+    $current = (Get-Item WSMan:\localhost\Shell\IdleTimeout).Value;
+    if ($current -ne '{{ winrm_quota_idle_timeout_ms }}') {
+      Set-Item WSMan:\localhost\Shell\IdleTimeout -Value {{ winrm_quota_idle_timeout_ms }};
+      Write-Output 'changed'
+    } else {
+      Write-Output 'ok'
+    }
+  register: _set_idle_timeout
+  changed_when: "'changed' in _set_idle_timeout.stdout"
+  # NOTE: WSMan quotas take effect immediately on new shell creation.
+  # Do NOT restart WinRM — it kills the management connection and is
+  # often unrecoverable over WinRM. See finding-winrm-restart-20260313.md.
+
+- name: Set MaxMemoryPerShellMB
+  ansible.windows.win_shell: >-
+    $current = (Get-Item WSMan:\localhost\Shell\MaxMemoryPerShellMB).Value;
+    if ($current -ne '{{ winrm_quota_max_memory_per_shell_mb }}') {
+      Set-Item WSMan:\localhost\Shell\MaxMemoryPerShellMB -Value {{ winrm_quota_max_memory_per_shell_mb }};
+      Write-Output 'changed'
+    } else {
+      Write-Output 'ok'
+    }
+  register: _set_max_memory
+  changed_when: "'changed' in _set_max_memory.stdout"
+  # NOTE: WSMan quotas take effect immediately on new shell creation.
+  # Do NOT restart WinRM — it kills the management connection and is
+  # often unrecoverable over WinRM. See finding-winrm-restart-20260313.md.
+
+- name: Set MaxConcurrentOperationsPerUser
+  ansible.windows.win_shell: >-
+    $current = (Get-Item WSMan:\localhost\Service\MaxConcurrentOperationsPerUser).Value;
+    if ($current -ne '{{ winrm_quota_max_concurrent_ops_per_user }}') {
+      Set-Item WSMan:\localhost\Service\MaxConcurrentOperationsPerUser -Value {{ winrm_quota_max_concurrent_ops_per_user }};
+      Write-Output 'changed'
+    } else {
+      Write-Output 'ok'
+    }
+  register: _set_max_concurrent_ops
+  changed_when: "'changed' in _set_max_concurrent_ops.stdout"
+  # NOTE: WSMan quotas take effect immediately on new shell creation.
+  # Do NOT restart WinRM — it kills the management connection and is
+  # often unrecoverable over WinRM. See finding-winrm-restart-20260313.md.

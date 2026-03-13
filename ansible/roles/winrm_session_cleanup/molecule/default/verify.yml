@@ -1,0 +1,40 @@
+---
+- name: Verify - WinRM session cleanup
+  hosts: win-target
+  serial: 1
+  gather_facts: false
+  tasks:
+    - name: Check cleanup script is deployed
+      ansible.windows.win_stat:
+        path: "{{ winrm_cleanup_script_path | default('C:\\Scripts\\cleanup-winrm-sessions.ps1') }}"
+      register: script_stat
+
+    - name: Assert cleanup script exists
+      ansible.builtin.assert:
+        that:
+          - script_stat.stat.exists
+        fail_msg: "Cleanup script not found at expected path"
+        success_msg: "Cleanup script is deployed"
+
+    - name: Check scheduled task exists
+      ansible.windows.win_powershell:
+        script: |
+          $task = Get-ScheduledTask -TaskName 'WinRM Session Cleanup' -ErrorAction SilentlyContinue
+          if ($task) {
+              [PSCustomObject]@{
+                  Name    = $task.TaskName
+                  State   = $task.State.ToString()
+                  Enabled = ($task.State -ne 'Disabled')
+              } | ConvertTo-Json
+          } else {
+              '{"Name": null, "State": "NotFound", "Enabled": false}'
+          }
+      register: task_check
+
+    - name: Assert scheduled task is registered and enabled
+      ansible.builtin.assert:
+        that:
+          - (task_check.output | first | from_json).Name == 'WinRM Session Cleanup'
+          - (task_check.output | first | from_json).Enabled
+        fail_msg: "Scheduled task 'WinRM Session Cleanup' is not registered or not enabled"
+        success_msg: "Scheduled task 'WinRM Session Cleanup' is registered and enabled"

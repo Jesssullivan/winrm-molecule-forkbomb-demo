@@ -1,0 +1,27 @@
+---
+profile: production
+
+skip_list:
+  - yaml[line-length]
+  - name[missing]
+  - name[template]
+  - name[casing]
+  - role-name
+  - var-naming[no-role-prefix]
+  - meta-runtime[unsupported-version]
+  - ignore-errors
+
+warn_list:
+  - experimental
+
+offline: false
+
+exclude_paths:
+  - ansible/roles/*/molecule/
+
+kinds:
+  - playbook: "ansible/playbooks/*.yml"
+  - tasks: "ansible/roles/*/tasks/*.yml"
+  - vars: "ansible/roles/*/defaults/*.yml"
+  - meta: "ansible/roles/*/meta/*.yml"
+  - handlers: "ansible/roles/*/handlers/*.yml"

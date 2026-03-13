@@ -1,0 +1,14 @@
+---
+# Default port for the demo IIS site
+firewall_demo_port: 8080
+
+# WinRM HTTPS listener port
+firewall_winrm_https_port: 5986
+
+# Whether firewall rules are enabled
+firewall_rules_enabled: true
+
+# Windows Firewall profiles the rules apply to
+firewall_rule_profiles:
+  - Domain
+  - Private

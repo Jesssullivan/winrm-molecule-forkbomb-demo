@@ -1,0 +1,9 @@
+---
+- name: Deploy Alloy WinRM monitoring configuration
+  ansible.windows.win_template:
+    src: winrm-monitoring.alloy.j2
+    dest: "{{ winrm_monitoring_alloy_config_dir }}\\{{ winrm_monitoring_alloy_extra_config }}"
+  notify: restart alloy
+  tags:
+    - winrm-monitoring
+    - observability

@@ -1,0 +1,66 @@
+site_name: WinRM Forkbomb Demo
+site_description: >-
+  Research project demonstrating how Ansible's WinRM connection model causes
+  authentication exhaustion and Active Directory lockouts.
+site_url: https://Jesssullivan.github.io/winrm-molecule-forkbomb-demo/
+repo_url: https://github.com/Jesssullivan/winrm-molecule-forkbomb-demo
+repo_name: winrm-molecule-forkbomb-demo
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.expand
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Analysis:
+      - Forkbomb Mechanism: forkbomb-mechanism.md
+      - Parallelism Patterns: parallelism-patterns.md
+      - Plugin Quota Analysis: plugin-quota-analysis.md
+  - Reference:
+      - WinRM Quotas: winrm-quotas.md
+      - Server Defaults: winrm-server-defaults.md
+      - Quota Research: winrm-quota-research.md
+      - pywinrm vs pypsrp: pywinrm-vs-pypsrp.md
+  - Operations:
+      - AD Lockout Prevention: ad-lockout-prevention.md
+      - Upstream Issues: upstream-issues.md
+  - Results:
+      - Benchmark Results: benchmark-results.md
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - toc:
+      permalink: true
+  - tables
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Jesssullivan/winrm-molecule-forkbomb-demo

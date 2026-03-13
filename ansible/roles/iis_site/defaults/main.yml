@@ -1,0 +1,18 @@
+---
+# IIS site configuration defaults
+
+# Name of the IIS website
+iis_site_name: WinRMForkbombDemo
+
+# Port the site listens on
+iis_site_port: 8080
+
+# Physical path for site content on the Windows host
+iis_site_physical_path: 'C:\inetpub\forkbomb-demo'
+
+# IIS application pool name
+iis_site_app_pool: ForkbombDemoPool
+
+# GitHub owner/repo used by the SPA to display repo contents
+iis_site_github_owner: Jesssullivan
+iis_site_github_repo: winrm-molecule-forkbomb-demo

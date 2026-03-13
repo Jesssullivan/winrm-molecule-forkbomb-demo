@@ -1,0 +1,84 @@
+// WinRM Monitoring - Grafana Alloy configuration
+// Deployed by the winrm_monitoring Ansible role (winrm-molecule-forkbomb-demo)
+//
+// Forwards WinRM operational and security event logs to Loki for
+// correlation with Prometheus shell metrics.
+
+// ============================================================================
+// WinRM/Operational event log source
+// ============================================================================
+// Tracked Event IDs:
+//   142 - WSMan operation CreateShell failed (quota exhaustion / connection refused)
+//   145 - WSMan API call initiated (tracks all remote calls)
+//   161 - User authentication processing (auth flow visibility)
+//   254 - Activity transfer (correlates WinRM operations across sessions)
+loki.source.windowsevent "winrm_operational" {
+  eventlog_name = "Microsoft-Windows-WinRM/Operational"
+  xpath_query   = "*[System[{{ winrm_monitoring_winrm_event_ids | map('string') | map('regex_replace', '^(.*)$', '(EventID=\\1)') | join(' or ') }}]]"
+
+  labels = {
+{% for key, value in winrm_monitoring_labels.items() %}
+    {{ key }} = "{{ value }}",
+{% endfor %}
+    source  = "winrm_operational",
+  }
+
+  forward_to = [loki.process.winrm_events.receiver]
+}
+
+// ============================================================================
+// Security event log source (authentication events)
+// ============================================================================
+// Tracked Event IDs:
+//   4624 - Successful logon (baseline for normal auth rate)
+//   4625 - Failed logon (precursor to AD account lockout)
+//   4778 - Session reconnected (WinRM session reuse)
+//   4779 - Session disconnected (WinRM session teardown)
+loki.source.windowsevent "security_auth" {
+  eventlog_name = "Security"
+  xpath_query   = "*[System[{{ winrm_monitoring_security_event_ids | map('string') | map('regex_replace', '^(.*)$', '(EventID=\\1)') | join(' or ') }}]]"
+
+  labels = {
+{% for key, value in winrm_monitoring_labels.items() %}
+    {{ key }} = "{{ value }}",
+{% endfor %}
+    source  = "security_auth",
+  }
+
+  forward_to = [loki.process.winrm_events.receiver]
+}
+
+// ============================================================================
+// Processing stage - add hostname and normalize
+// ============================================================================
+loki.process "winrm_events" {
+  stage.static_labels {
+    values = {
+      hostname = "{{ inventory_hostname }}",
+    }
+  }
+
+  forward_to = [loki.write.default.receiver]
+}
+
+// ============================================================================
+// Loki write endpoint
+// ============================================================================
+{% if winrm_monitoring_loki_url %}
+loki.write "default" {
+  endpoint {
+    url = "{{ winrm_monitoring_loki_url }}"
+{% if winrm_monitoring_loki_tenant_id %}
+    tenant_id = "{{ winrm_monitoring_loki_tenant_id }}"
+{% endif %}
+  }
+}
+{% else %}
+// WARNING: No Loki URL configured. Events are collected but not forwarded.
+// Set winrm_monitoring_loki_url to enable forwarding.
+loki.write "default" {
+  endpoint {
+    url = "http://localhost:3100/loki/api/v1/push"
+  }
+}
+{% endif %}

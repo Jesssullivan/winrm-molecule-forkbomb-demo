@@ -1,0 +1,39 @@
+---
+# Elevated safe defaults for WinRM shell quotas.
+# Windows defaults are much lower (e.g., MaxShellsPerUser=30) and will cause
+# quota exhaustion under parallel Ansible forks. These values are tuned for
+# safe parallel testing without triggering AD lockouts.
+
+# Maximum concurrent shells per authenticated user (Windows default: 30)
+winrm_quota_max_shells_per_user: 100
+
+# Maximum concurrent authenticated users (Windows default: 10)
+winrm_quota_max_concurrent_users: 25
+
+# Maximum processes spawned per shell (Windows default: 25)
+winrm_quota_max_processes_per_shell: 50
+
+# Shell idle timeout in milliseconds (Windows default: 7200000 / 2 hours)
+# 300000ms = 5 minutes - aggressive cleanup of stale shells
+winrm_quota_idle_timeout_ms: 300000
+
+# Maximum memory per shell in MB (Windows default: 1024)
+winrm_quota_max_memory_per_shell_mb: 2048
+
+# Maximum concurrent operations per user (Windows default: 1500)
+# 4294967295 = UINT32_MAX, effectively unlimited
+winrm_quota_max_concurrent_ops_per_user: 4294967295
+
+# ── Plugin-level quotas ──────────────────────────────────────────────
+# The microsoft.powershell plugin has its OWN quota layer that often has
+# LOWER defaults than Shell quotas. The effective limit is min(shell, plugin).
+# See docs/plugin-quota-analysis.md for the full analysis.
+
+# Mirror shell quotas at plugin level (default: true)
+winrm_quota_configure_plugin: true
+
+# Plugin: WSMan:\localhost\Plugin\microsoft.powershell\Quotas
+winrm_quota_plugin_max_shells: 100
+winrm_quota_plugin_max_shells_per_user: 100
+winrm_quota_plugin_max_concurrent_users: 25
+winrm_quota_plugin_max_concurrent_commands_per_shell: 2147483647

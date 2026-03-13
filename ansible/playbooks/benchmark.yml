@@ -1,0 +1,78 @@
+---
+# Benchmark playbook for testing WinRM connection behavior at various fork levels.
+#
+# This playbook deliberately creates many rapid WinRM connections to demonstrate
+# the forkbomb behavior. It does NOT use serial:1, so it exercises full parallelism.
+#
+# WARNING: Running with high fork counts against default WinRM quotas WILL cause
+# connection failures and may trigger AD lockout. Run `just audit` first and
+# `just deploy-quotas` if quotas need elevation.
+#
+# Usage:
+#   just benchmark-safe       # forks=5, safe baseline
+#   just benchmark-unsafe     # forks=50, demonstrates forkbomb
+#   just benchmark-psrp       # forks=20, pypsrp comparison
+#
+# Variables:
+#   benchmark_forks: 5        # Number of Ansible forks
+#   benchmark_iterations: 10  # Number of win_ping rounds
+#   benchmark_label: ""       # Label for this run
+
+- name: "WinRM Connection Benchmark (forks={{ benchmark_forks | default(5) }})"
+  hosts: demo_servers
+  gather_facts: false
+
+  vars:
+    benchmark_forks: 5
+    benchmark_iterations: 10
+    benchmark_label: "forks-{{ benchmark_forks }}"
+
+  tasks:
+    - name: "Record benchmark start time"
+      ansible.builtin.set_fact:
+        benchmark_start: "{{ now(utc=true, fmt='%Y-%m-%dT%H:%M:%S.%fZ') }}"
+
+    - name: "Pre-benchmark: count active shells"
+      ansible.windows.win_shell: |
+        $shells = @(Get-WSManInstance -ResourceURI shell -Enumerate -ErrorAction SilentlyContinue)
+        @{ count = $shells.Count; timestamp = (Get-Date -Format o) } | ConvertTo-Json
+      register: pre_shells
+      changed_when: false
+
+    - name: "Benchmark round {{ item }}: win_ping"
+      ansible.windows.win_ping:
+      loop: "{{ range(1, (benchmark_iterations | int) + 1) | list }}"
+      loop_control:
+        label: "Round {{ item }}/{{ benchmark_iterations }}"
+
+    - name: "Post-benchmark: count active shells"
+      ansible.windows.win_shell: |
+        $shells = @(Get-WSManInstance -ResourceURI shell -Enumerate -ErrorAction SilentlyContinue)
+        $procs = @(Get-Process wsmprovhost -ErrorAction SilentlyContinue)
+        @{
+          shell_count = $shells.Count
+          process_count = $procs.Count
+          timestamp = (Get-Date -Format o)
+        } | ConvertTo-Json
+      register: post_shells
+      changed_when: false
+
+    - name: "Record benchmark end time"
+      ansible.builtin.set_fact:
+        benchmark_end: "{{ now(utc=true, fmt='%Y-%m-%dT%H:%M:%S.%fZ') }}"
+
+    - name: "Display benchmark results"
+      ansible.builtin.debug:
+        msg: |
+          ╔══════════════════════════════════════════════════╗
+          ║  Benchmark Results: {{ benchmark_label }}
+          ╠══════════════════════════════════════════════════╣
+          ║  Forks:        {{ benchmark_forks }}
+          ║  Iterations:   {{ benchmark_iterations }}
+          ║  Start:        {{ benchmark_start }}
+          ║  End:          {{ benchmark_end }}
+          ║
+          ║  Pre-benchmark shells:  {{ (pre_shells.stdout | from_json).count }}
+          ║  Post-benchmark shells: {{ (post_shells.stdout | from_json).shell_count }}
+          ║  Post wsmprovhost:      {{ (post_shells.stdout | from_json).process_count }}
+          ╚══════════════════════════════════════════════════╝

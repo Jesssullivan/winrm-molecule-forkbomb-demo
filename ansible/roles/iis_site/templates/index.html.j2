@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="github-owner" content="{{ iis_site_github_owner }}">
+  <meta name="github-repo" content="{{ iis_site_github_repo }}">
+  <title>WinRM Forkbomb Demo - {{ iis_site_github_repo }}</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>WinRM Molecule Forkbomb Demo</h1>
+    <p>Deployed on {{ ansible_hostname }} via Ansible</p>
+    <p class="subtitle">Demonstrating WinRM connection exhaustion behavior</p>
+  </header>
+  <main>
+    <div id="repo-info"></div>
+    <div id="file-tree"></div>
+    <div id="file-content"></div>
+  </main>
+  <footer>
+    <p>Source: <a id="repo-link" href="#">GitHub</a></p>
+  </footer>
+  <script src="app.js"></script>
+</body>
+</html>

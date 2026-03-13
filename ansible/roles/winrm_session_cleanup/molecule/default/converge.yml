@@ -1,0 +1,7 @@
+---
+- name: Converge - WinRM session cleanup
+  hosts: win-target
+  serial: 1
+  gather_facts: false
+  roles:
+    - role: winrm_session_cleanup

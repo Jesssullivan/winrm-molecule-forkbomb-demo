@@ -1,0 +1,203 @@
+/* WinRM Forkbomb Demo - Minimal dark theme */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #1a1a2e;
+  color: #e0e0e0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.6;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  background: #16213e;
+  padding: 2rem;
+  border-bottom: 2px solid #0f3460;
+  text-align: center;
+}
+
+header h1 {
+  color: #e94560;
+  font-size: 1.8rem;
+  margin-bottom: 0.5rem;
+}
+
+header p {
+  color: #a0a0b0;
+  font-size: 0.95rem;
+}
+
+header .subtitle {
+  color: #7a7a8a;
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+main {
+  flex: 1;
+  max-width: 960px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+#repo-info {
+  background: #16213e;
+  border: 1px solid #0f3460;
+  border-radius: 6px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+#repo-info .description {
+  color: #b0b0c0;
+  margin-bottom: 0.5rem;
+}
+
+#repo-info .stats {
+  font-size: 0.85rem;
+  color: #7a7a8a;
+}
+
+#repo-info .stats span {
+  margin-right: 1rem;
+}
+
+#file-tree {
+  background: #16213e;
+  border: 1px solid #0f3460;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+#file-tree h2 {
+  font-size: 1rem;
+  color: #e94560;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #0f3460;
+}
+
+.tree-item {
+  padding: 0.3rem 0;
+  cursor: pointer;
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 0.9rem;
+  transition: color 0.15s;
+}
+
+.tree-item:hover {
+  color: #e94560;
+}
+
+.tree-item.directory {
+  color: #5dade2;
+  font-weight: 600;
+}
+
+.tree-item.file {
+  color: #d0d0e0;
+}
+
+.tree-item.active {
+  color: #e94560;
+  font-weight: 600;
+}
+
+.tree-indent {
+  display: inline-block;
+  width: 1.25rem;
+}
+
+#file-content {
+  background: #16213e;
+  border: 1px solid #0f3460;
+  border-radius: 6px;
+  display: none;
+}
+
+#file-content h3 {
+  font-size: 0.9rem;
+  color: #e94560;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #0f3460;
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+}
+
+#file-content pre {
+  padding: 1rem;
+  overflow-x: auto;
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #c0c0d0;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+#file-content pre code {
+  white-space: pre;
+}
+
+.loading {
+  color: #7a7a8a;
+  font-style: italic;
+  padding: 1rem;
+  text-align: center;
+}
+
+.error {
+  color: #e94560;
+  padding: 1rem;
+  text-align: center;
+}
+
+.rate-limit {
+  background: #2a1a1e;
+  border: 1px solid #e94560;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  text-align: center;
+  color: #e94560;
+}
+
+footer {
+  background: #16213e;
+  padding: 1rem 2rem;
+  text-align: center;
+  border-top: 2px solid #0f3460;
+  font-size: 0.85rem;
+  color: #7a7a8a;
+}
+
+footer a {
+  color: #e94560;
+  text-decoration: none;
+}
+
+footer a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+  header {
+    padding: 1.25rem;
+  }
+
+  header h1 {
+    font-size: 1.4rem;
+  }
+
+  main {
+    padding: 1rem;
+  }
+}

@@ -1,0 +1,67 @@
+---
+- name: Create WinRM monitoring script directory
+  ansible.windows.win_file:
+    path: "{{ winrm_monitoring_script_dir }}"
+    state: directory
+  tags:
+    - winrm-monitoring
+    - observability
+
+- name: Create textfile inputs directory for windows_exporter
+  ansible.windows.win_file:
+    path: "{{ winrm_monitoring_textfile_dir }}"
+    state: directory
+  tags:
+    - winrm-monitoring
+    - observability
+
+- name: Deploy WinRM shell metrics PowerShell script
+  ansible.windows.win_template:
+    src: winrm-shell-metrics.ps1.j2
+    dest: "{{ winrm_monitoring_script_dir }}\\winrm-shell-metrics.ps1"
+  tags:
+    - winrm-monitoring
+    - observability
+
+- name: Create WinRM Shell Metrics Collector scheduled task
+  ansible.windows.win_shell: |
+    $taskName = 'WinRM Shell Metrics Collector'
+    $existing = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+    if ($existing) {
+      Write-Output 'ok'
+    } else {
+      $action = New-ScheduledTaskAction -Execute 'powershell.exe' `
+        -Argument '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{{ winrm_monitoring_script_dir }}\winrm-shell-metrics.ps1"'
+      $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) `
+        -RepetitionInterval (New-TimeSpan -Seconds {{ winrm_monitoring_shell_enum_interval_seconds }})
+      $principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -RunLevel Highest -LogonType ServiceAccount
+      $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
+      Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger `
+        -Principal $principal -Settings $settings `
+        -Description 'Collects WinRM shell metrics for Prometheus textfile collector (forkbomb-demo)'
+      Write-Output 'changed'
+    }
+  register: _create_scheduled_task
+  changed_when: "'changed' in _create_scheduled_task.stdout"
+  tags:
+    - winrm-monitoring
+    - observability
+
+- name: Run metrics script once to verify it works
+  ansible.windows.win_shell: >-
+    powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass
+    -File "{{ winrm_monitoring_script_dir }}\winrm-shell-metrics.ps1"
+  register: _winrm_metrics_initial_run
+  changed_when: false
+  tags:
+    - winrm-monitoring
+    - observability
+
+- name: Verify .prom file was created
+  ansible.windows.win_stat:
+    path: "{{ winrm_monitoring_textfile_dir }}\\winrm_shells.prom"
+  register: _winrm_prom_file
+  failed_when: not _winrm_prom_file.stat.exists
+  tags:
+    - winrm-monitoring
+    - observability

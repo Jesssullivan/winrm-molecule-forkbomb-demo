@@ -1,0 +1,24 @@
+---
+# Create the IIS application pool, physical directory, and website.
+
+- name: Create IIS application pool
+  community.windows.win_iis_webapppool:
+    name: "{{ iis_site_app_pool }}"
+    state: started
+    attributes:
+      managedRuntimeVersion: v4.0
+      managedPipelineMode: Integrated
+
+- name: Create site physical path directory
+  ansible.windows.win_file:
+    path: "{{ iis_site_physical_path }}"
+    state: directory
+
+- name: Create IIS website
+  community.windows.win_iis_website:
+    name: "{{ iis_site_name }}"
+    state: started
+    port: "{{ iis_site_port }}"
+    physical_path: "{{ iis_site_physical_path }}"
+    application_pool: "{{ iis_site_app_pool }}"
+  notify: restart iis

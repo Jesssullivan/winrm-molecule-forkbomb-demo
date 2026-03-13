@@ -1,0 +1,33 @@
+---
+- name: Verify IIS site
+  hosts: all
+  tasks:
+    - name: Check IIS site is running
+      ansible.windows.win_shell: |
+        Get-IISSite -Name '{{ iis_site_name }}' | Select-Object -ExpandProperty State
+      register: site_state
+
+    - name: Assert site is started
+      ansible.builtin.assert:
+        that:
+          - site_state.stdout | trim == 'Started'
+        fail_msg: "IIS site {{ iis_site_name }} is not running"
+
+    - name: Check HTTP response on site port
+      ansible.windows.win_uri:
+        url: "http://localhost:{{ iis_site_port }}/"
+        return_content: true
+        status_code: 200
+      register: http_result
+
+    - name: Assert response contains expected content
+      ansible.builtin.assert:
+        that:
+          - "'WinRM Molecule Forkbomb Demo' in http_result.content"
+        fail_msg: "Site did not return expected content"
+
+    - name: Check custom header is present
+      ansible.builtin.assert:
+        that:
+          - "'ansible-forkbomb-demo' in http_result.x_deployed_by | default('')"
+        fail_msg: "X-Deployed-By header not found in response"

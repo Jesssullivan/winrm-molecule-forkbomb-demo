@@ -1,0 +1,14 @@
+---
+- name: Include shell enumeration tasks
+  ansible.builtin.include_tasks: shell-enumeration.yml
+  when: winrm_monitoring_shell_enum_enabled | bool
+  tags:
+    - winrm-monitoring
+    - observability
+
+- name: Include eventlog forwarding tasks
+  ansible.builtin.include_tasks: eventlog-forwarding.yml
+  when: winrm_monitoring_eventlog_enabled | bool
+  tags:
+    - winrm-monitoring
+    - observability

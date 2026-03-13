@@ -1,0 +1,40 @@
+---
+- name: Enumerate active WinRM shells
+  ansible.windows.win_powershell:
+    script: |
+      $shells = Get-WSManInstance -ResourceURI shell -Enumerate
+      $result = @()
+      foreach ($shell in $shells) {
+          $runtime = [System.Xml.XmlConvert]::ToTimeSpan($shell.ShellRunTime)
+          $result += [PSCustomObject]@{
+              ShellId    = $shell.ShellId
+              Owner      = $shell.Owner
+              State      = $shell.State
+              RuntimeMin = [math]::Round($runtime.TotalMinutes, 1)
+              ShellRunTime = $shell.ShellRunTime
+          }
+      }
+      $result | ConvertTo-Json -Depth 3
+  register: winrm_shells_raw
+  changed_when: false
+
+- name: Gather wsmprovhost process information
+  ansible.windows.win_powershell:
+    script: |
+      $procs = Get-Process wsmprovhost -ErrorAction SilentlyContinue |
+        Select-Object Id, StartTime, CPU, WorkingSet64
+      if ($procs) {
+          $procs | ConvertTo-Json -Depth 3
+      } else {
+          '[]'
+      }
+  register: winrm_processes_raw
+  changed_when: false
+
+- name: Display WinRM session summary
+  ansible.builtin.debug:
+    msg: |
+      === WinRM Session Summary ===
+      Active shells: {{ (winrm_shells_raw.output | default(['[]']) | first | from_json) | length }}
+      wsmprovhost processes: {{ (winrm_processes_raw.output | default(['[]']) | first | from_json) | length }}
+      Threshold for stale: {{ winrm_cleanup_max_age_minutes }} minutes

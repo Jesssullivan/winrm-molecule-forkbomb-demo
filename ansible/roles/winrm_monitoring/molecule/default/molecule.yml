@@ -1,0 +1,24 @@
+---
+dependency:
+  name: galaxy
+
+driver:
+  name: default
+
+platforms:
+  - name: win-target
+    managed: false
+    groups:
+      - windows
+
+provisioner:
+  name: ansible
+  inventory:
+    links:
+      hosts: ../../../../../../molecule/inventory.yml
+  config_options:
+    defaults:
+      serial: 1
+
+verifier:
+  name: ansible

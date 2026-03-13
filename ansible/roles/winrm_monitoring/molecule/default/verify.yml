@@ -1,0 +1,53 @@
+---
+- name: Verify winrm_monitoring role
+  hosts: all
+  serial: 1
+  tasks:
+    - name: Check metrics script exists
+      ansible.windows.win_stat:
+        path: "{{ winrm_monitoring_script_dir | default('C:\\Scripts\\winrm-monitoring') }}\\winrm-shell-metrics.ps1"
+      register: _script_file
+      failed_when: not _script_file.stat.exists
+
+    - name: Check scheduled task exists and is ready
+      ansible.windows.win_shell: |
+        $task = Get-ScheduledTask -TaskName 'WinRM Shell Metrics Collector' -ErrorAction Stop
+        if ($task.State -ne 'Ready' -and $task.State -ne 'Running') {
+          throw "Scheduled task state is $($task.State), expected Ready or Running"
+        }
+        Write-Output $task.State
+      register: _sched_task
+      changed_when: false
+
+    - name: Check .prom file exists
+      ansible.windows.win_stat:
+        path: "{{ winrm_monitoring_textfile_dir | default('C:\\Program Files\\windows_exporter\\textfile_inputs') }}\\winrm_shells.prom"
+      register: _prom_file
+      failed_when: not _prom_file.stat.exists
+
+    - name: Verify .prom file contains expected metrics
+      ansible.windows.win_shell: |
+        $content = Get-Content '{{ winrm_monitoring_textfile_dir | default("C:\\Program Files\\windows_exporter\\textfile_inputs") }}\winrm_shells.prom' -Raw
+        $expected = @(
+          'winrm_active_shells ',
+          'winrm_wsmprovhost_processes ',
+          'winrm_wsmprovhost_memory_bytes ',
+          'winrm_quota_max_shells_per_user ',
+          'winrm_quota_max_concurrent_users ',
+          'winrm_shell_enumeration_errors_total '
+        )
+        foreach ($metric in $expected) {
+          if ($content -notmatch [regex]::Escape($metric)) {
+            throw "Missing metric: $metric"
+          }
+        }
+        Write-Output "All expected metrics found"
+      register: _prom_content
+      changed_when: false
+
+    - name: Check Alloy config file exists (if eventlog enabled)
+      ansible.windows.win_stat:
+        path: "{{ winrm_monitoring_alloy_config_dir | default('C:\\ProgramData\\GrafanaLabs\\Alloy') }}\\{{ winrm_monitoring_alloy_extra_config | default('winrm-monitoring.alloy') }}"
+      register: _alloy_config
+      failed_when: not _alloy_config.stat.exists
+      when: winrm_monitoring_eventlog_enabled | default(true) | bool
