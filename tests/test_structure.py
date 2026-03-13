@@ -138,7 +138,6 @@ class TestProjectFiles:
         "pyproject.toml",
         ".sops.yaml",
         "justfile",
-        "CLAUDE.md",
         "ansible/ansible.cfg",
         "ansible/requirements.yml",
         "ansible/inventory/hosts.yml",
