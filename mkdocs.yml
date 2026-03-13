@@ -2,8 +2,8 @@ site_name: WinRM Forkbomb Demo
 site_description: >-
   Research project demonstrating how Ansible's WinRM connection model causes
   authentication exhaustion and Active Directory lockouts.
-site_url: https://OWNER.github.io/winrm-molecule-forkbomb-demo/
-repo_url: https://github.com/OWNER/winrm-molecule-forkbomb-demo
+site_url: https://Jesssullivan.github.io/winrm-molecule-forkbomb-demo/
+repo_url: https://github.com/Jesssullivan/winrm-molecule-forkbomb-demo
 repo_name: winrm-molecule-forkbomb-demo
 
 theme:
@@ -63,4 +63,4 @@ markdown_extensions:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/OWNER/winrm-molecule-forkbomb-demo
+      link: https://github.com/Jesssullivan/winrm-molecule-forkbomb-demo
