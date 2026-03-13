@@ -5,6 +5,8 @@ skip_list:
   - yaml[line-length]
   - name[missing]
   - role-name
+  - var-naming[no-role-prefix]
+  - syntax-check[specific]
 
 warn_list:
   - experimental

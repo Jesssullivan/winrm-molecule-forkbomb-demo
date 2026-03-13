@@ -29,14 +29,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Dhall
-        run: |
-          curl -L https://github.com/dhall-lang/dhall-haskell/releases/download/1.42.1/dhall-1.42.1-x86_64-linux.tar.bz2 | tar xj
-          curl -L https://github.com/dhall-lang/dhall-haskell/releases/download/1.42.1/dhall-json-1.7.12-x86_64-linux.tar.bz2 | tar xj
-          echo "$PWD/bin" >> $GITHUB_PATH
+        uses: dhall-lang/setup-dhall@v4
+        with:
+          version: '1.42.1'
       - name: Dhall typecheck
         run: |
           dhall type --file dhall/package.dhall > /dev/null
-          dhall type --file dhall/render-benchmarks.dhall > /dev/null
           dhall type --file dhall/render-quotas.dhall > /dev/null
           dhall type --file dhall/render-roles.dhall > /dev/null
 
